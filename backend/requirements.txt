@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+httpx
+requests
+python-dotenv
+pydantic
+azure-cognitiveservices-speech
+anthropic
+numpy

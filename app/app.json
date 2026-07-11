@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "MIA Wealth",
+    "slug": "mia-wealth-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F4ECDC",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.miawealth.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "MIA uses your microphone so you can talk to your AI wealth advisor.",
+        "NSCameraUsageDescription": "MIA may use your camera for the avatar video call experience."
+      }
+    },
+    "android": {
+      "package": "com.miawealth.app",
+      "permissions": ["RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS", "INTERNET"]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:8000"
+    }
+  }
+}

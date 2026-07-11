@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+@theme {
+  --color-maroon: #7a1b1b;
+  --color-maroon-dark: #551212;
+  --color-maroon-light: #9c2b2b;
+  --color-cream: #f4ecd8;
+  --color-cream-dark: #e6d8b8;
+  --color-gold: #d6a13c;
+  --color-gold-dark: #b3822a;
+  --color-ink: #171210;
+  --color-ok: #1e7a45;
+  --color-warn: #b3822a;
+  --color-danger: #a3241f;
+
+  --font-display: var(--font-display-family), "Space Grotesk", system-ui, sans-serif;
+  --font-body: var(--font-body-family), "Inter", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* ───────────────────────── Neo-brutalist primitives ───────────────────────── */
+
+.neo-card {
+  background: #fff;
+  border: 3px solid var(--color-ink);
+  box-shadow: 6px 6px 0 0 var(--color-ink);
+}
+
+.neo-card-cream {
+  background: var(--color-cream);
+  border: 3px solid var(--color-ink);
+  box-shadow: 6px 6px 0 0 var(--color-ink);
+}
+
+.neo-btn {
+  border: 3px solid var(--color-ink);
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.neo-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 0 var(--color-ink);
+}
+.neo-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+.neo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.neo-btn-primary {
+  background: var(--color-maroon);
+  color: var(--color-cream);
+}
+.neo-btn-accent {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+.neo-btn-ink {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+.neo-input {
+  border: 3px solid var(--color-ink);
+  background: #fff;
+  padding: 10px 14px;
+  font-weight: 500;
+  outline: none;
+  width: 100%;
+}
+.neo-input:focus {
+  box-shadow: 4px 4px 0 0 var(--color-gold);
+}
+
+/* ───────────────────────────────── Sidebar ─────────────────────────────────── */
+
+.sidebar-link {
+  display: block;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid transparent;
+  color: var(--color-cream);
+  transition: all 0.1s;
+}
+.sidebar-link:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+.sidebar-link-active {
+  background: var(--color-gold);
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ─────────────────── Suitability pills — never subtle, ever ────────────────── */
+
+.suitability-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 2.5px solid var(--color-ink);
+  padding: 4px 12px;
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: 3px 3px 0 0 var(--color-ink);
+  white-space: nowrap;
+}
+.pill-suitable {
+  background: #b6e3b6;
+  color: #0d3d1c;
+}
+.pill-needs-review {
+  background: #f4cf7a;
+  color: #4a3300;
+}
+.pill-not-suitable {
+  background: #f2a8a3;
+  color: #4a0e0a;
+}
+.pill-unknown {
+  background: #ddd;
+  color: #333;
+}
+
+/* ────────────────────────────── "Why?" panel ───────────────────────────────── */
+
+.why-toggle {
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-maroon);
+  border-bottom: 2px solid var(--color-maroon);
+  cursor: pointer;
+}
+.why-panel {
+  margin-top: 10px;
+  border: 2.5px solid var(--color-ink);
+  background: var(--color-cream);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.why-block .why-label {
+  font-weight: 800;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-maroon);
+  margin-bottom: 3px;
+}
+.why-block ul {
+  list-style: disc;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+}
+.why-block p {
+  font-size: 0.85rem;
+}
+.why-risk {
+  border-top: 2px dashed var(--color-ink);
+  padding-top: 10px;
+}
+.why-confidence {
+  font-size: 0.7rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+/* ────────────────────────────────── Misc ───────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--color-ink);
+  padding: 2px 9px;
+  font-weight: 700;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.progress-track {
+  border: 2.5px solid var(--color-ink);
+  background: #fff;
+  height: 18px;
+  width: 100%;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--color-gold);
+  border-right: 2.5px solid var(--color-ink);
+}
