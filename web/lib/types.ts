@@ -218,3 +218,30 @@ export interface MiaAdvisorTurnMessage {
   type: "mia-advisor-turn";
   payload: AdvisorTurnResponse;
 }
+
+// --- Tavus AI Avatar types ---
+
+export interface TavusConversationResponse {
+  conversation_id: string;
+  conversation_url: string;
+  status: string;
+}
+
+export interface TavusTurnResult {
+  turn_id: string;
+  reply: string;
+  cards: AdvisorTurnCard[];
+  rationale: Rationale | null;
+  suitability_tag: SuitabilityTag | null;
+  audit_id: string | null;
+  created_at: number;
+}
+
+export interface TavusPollResponse {
+  turns: TavusTurnResult[];
+  has_more: boolean;
+}
+export interface MiaAdvisorTurnMessage {
+  type: "mia-advisor-turn";
+  payload: AdvisorTurnResponse;
+}

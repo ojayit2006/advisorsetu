@@ -8,6 +8,8 @@ import type {
   ConsentArtefact,
   AAFetchResponse,
   AdvisorTurnResponse,
+  TavusConversationResponse,
+  TavusPollResponse,
 } from "./types";
 
 // Single source of truth for the backend origin. Never hardcode this
@@ -96,5 +98,23 @@ export const api = {
     request<AdvisorTurnResponse>("/advisor-turn", {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+
+  /** Tavus AI Avatar */
+
+  createTavusConversation: (body?: { customer_id?: string }) =>
+    request<TavusConversationResponse>("/tavus/conversations", {
+      method: "POST",
+      body: JSON.stringify(body || {}),
+    }),
+
+  getTavusResponses: (conversationId: string, sinceTurnId?: string) => {
+    const qs = sinceTurnId ? `?since_turn_id=${sinceTurnId}` : "";
+    return request<TavusPollResponse>(`/tavus/response/${conversationId}${qs}`);
+  },
+
+  endTavusConversation: (conversationId: string) =>
+    request<{ status: string }>(`/tavus/conversations/${conversationId}/end`, {
+      method: "POST",
     }),
 };

@@ -132,6 +132,32 @@ export const api = {
    */
   postAdvisorTurn: ({ customerId, message }) =>
     request("/advisor-turn", { method: "POST", body: { customer_id: customerId, message } }),
+
+  /**
+   * body { customer_id? } -> { conversation_id, conversation_url, status }
+   * Creates a Tavus avatar conversation session.
+   */
+  createTavusConversation: ({ customerId } = {}) =>
+    request("/tavus/conversations", {
+      method: "POST",
+      body: { customer_id: customerId },
+    }),
+
+  /**
+   * GET /tavus/response/{conversationId}
+   * Poll for full turn data (cards, rationale, etc.) from a Tavus conversation.
+   */
+  getTavusResponses: (conversationId, { sinceTurnId } = {}) => {
+    const qs = sinceTurnId ? `?since_turn_id=${sinceTurnId}` : "";
+    return request(`/tavus/response/${conversationId}${qs}`);
+  },
+
+  /**
+   * POST /tavus/conversations/{conversationId}/end
+   * End a Tavus conversation session.
+   */
+  endTavusConversation: (conversationId) =>
+    request(`/tavus/conversations/${conversationId}/end`, { method: "POST" }),
 };
 
 export { ApiError };

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MIA — Wealth Advisor</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#0f172a; overflow:hidden; font-family:monospace; }
+
+#avatar-container {
+  width:100%; height:100%;
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+#avatar { width:100%; height:100%; }
+#avatar canvas { display:block; width:100% !important; height:100% !important; }
+
+#alert-ring {
+  display:none; position:absolute; inset:0;
+  border:3px solid #f59e0b;
+  box-shadow:0 0 28px rgba(245,158,11,0.7);
+  animation:pulse 1s ease infinite; pointer-events:none;
+}
+#listen-ring {
+  display:none; position:absolute; inset:0;
+  border:3px solid #22c55e;
+  box-shadow:0 0 28px rgba(34,197,94,0.6);
+  animation:pulse 0.8s ease infinite; pointer-events:none;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+#mic-btn {
+  position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
+  width:72px; height:72px; border-radius:50%;
+  border:3px solid rgba(255,255,255,0.25);
+  background:rgba(15,23,42,0.9); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .2s; z-index:10;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+}
+#mic-btn:hover { background:rgba(30,58,138,0.95); border-color:#60a5fa; }
+#mic-btn.listening { background:rgba(21,128,61,0.95); border-color:#22c55e; box-shadow:0 0 24px rgba(34,197,94,0.5); }
+#mic-btn.thinking  { background:rgba(30,58,138,0.95); border-color:#818cf8; }
+#mic-icon { width:32px; height:32px; fill:rgba(255,255,255,0.9); }
+
+#status {
+  position:absolute; bottom:108px; left:50%; transform:translateX(-50%);
+  font-size:11px; color:rgba(255,255,255,0.6);
+  background:rgba(0,0,0,0.55); padding:4px 14px; border-radius:20px;
+  white-space:nowrap; pointer-events:none;
+}
+#transcript {
+  position:absolute; bottom:140px; left:50%; transform:translateX(-50%);
+  font-size:12px; color:#fbbf24; background:rgba(0,0,0,0.65);
+  padding:5px 16px; border-radius:20px; max-width:92%;
+  text-align:center; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; display:none;
+}
+</style>
+</head>
+<body>
+<div id="avatar-container">
+  <div id="avatar"></div>
+  <div id="alert-ring"></div>
+  <div id="listen-ring"></div>
+  <div id="transcript"></div>
+  <div id="status">Loading avatar...</div>
+  <button id="mic-btn" onclick="toggleMic()" title="Tap to speak">
+    <svg id="mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v7a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-1 17.93V23h2v-2.07A8.001 8.001 0 0 0 20 13h-2a6 6 0 0 1-12 0H4a8.001 8.001 0 0 0 7 7.93z"/>
+    </svg>
+  </button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.6/modules/talkinghead.mjs"
+  }
+}
+</script>
+
+<script type="module">
+// -----------------------------------------------------------------------------
+// MIA avatar page — TalkingHead.js + Ready Player Me + Web Speech API
+// -----------------------------------------------------------------------------
+// No paid keys. STT: browser SpeechRecognition (Chrome/Edge). TTS: browser
+// speechSynthesis. Avatar: TalkingHead.js loads a Ready Player Me GLB and drives
+// idle animations (breathing, blinking, micro head movement). Lip sync is driven
+// manually by animating viseme morph targets on the loaded mesh while
+// speechSynthesis is speaking, since browser TTS doesn't expose an audio buffer
+// we could feed to TalkingHead's speakAudio().
+//
+// To swap in your own Ready Player Me avatar: create one at https://readyplayer.me
+// (free, no signup for the "Try it now" flow — pick a female face for MIA), copy
+// the GLB URL, and replace AVATAR_URL below. Keep the query string exactly as
+// shown so the ARKit + Oculus viseme morph targets are baked in.
+// -----------------------------------------------------------------------------
+
+import { TalkingHead } from 'talkinghead';
+
+const AVATAR_URL =
+  'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb'
+  + '?morphTargets=ARKit,Oculus+Visemes&textureAtlas=1024&lod=0';
+
+const statusEl     = document.getElementById('status');
+const alertRing    = document.getElementById('alert-ring');
+const listenRing   = document.getElementById('listen-ring');
+const transcriptEl = document.getElementById('transcript');
+const micBtn       = document.getElementById('mic-btn');
+
+let head            = null;
+let recognition     = null;
+let selectedVoice   = null;
+let listening       = false;
+let speaking        = false;
+
+function setStatus(msg) { statusEl.textContent = msg; }
+function showTranscript(t) {
+  transcriptEl.textContent = t;
+  transcriptEl.style.display = t ? 'block' : 'none';
+}
+
+// ── TalkingHead + Ready Player Me ────────────────────────────────────────────
+
+async function initAvatar() {
+  setStatus('Loading avatar...');
+  const nodeAvatar = document.getElementById('avatar');
+  try {
+    head = new TalkingHead(nodeAvatar, {
+      lipsyncModules: ['en'],
+      cameraView: 'upper',
+      cameraDistance: 0,
+      lightAmbientIntensity: 2,
+      lightDirectIntensity: 30,
+      lightDirectPhi: 1.0,
+      lightDirectTheta: 2.0,
+    });
+    await head.showAvatar(
+      {
+        url: AVATAR_URL,
+        body: 'F',
+        avatarMood: 'neutral',
+        lipsyncLang: 'en',
+      },
+      (ev) => {
+        if (ev && ev.lengthComputable) {
+          const pct = Math.round((ev.loaded / ev.total) * 100);
+          setStatus(`Loading avatar ${pct}%`);
+        }
+      }
+    );
+    setStatus('Press mic to speak');
+    // Small delay so voices have a chance to load
+    setTimeout(() => {
+      speak("Hi, I'm MIA, your wealth advisor. How can I help you today?");
+    }, 1200);
+  } catch (err) {
+    console.error('[MIA] avatar init failed', err);
+    setStatus('Avatar unavailable — text chat still works');
+  }
+}
+
+// Walk the loaded scene and set a morph target influence by name.
+// Works with Ready Player Me heads (Wolf3D_Head + Wolf3D_Teeth meshes both
+// carry the viseme dictionary; we set both so the teeth follow the mouth).
+function setMorph(name, value) {
+  if (!head) return;
+  const root = head.armature || head.scene;
+  if (!root) return;
+  root.traverse((obj) => {
+    if (obj.morphTargetDictionary && obj.morphTargetInfluences) {
+      const idx = obj.morphTargetDictionary[name];
+      if (idx !== undefined) obj.morphTargetInfluences[idx] = value;
+    }
+  });
+}
+
+const VISEMES = ['aa', 'E', 'I', 'O', 'U'];
+function resetVisemes() {
+  ['sil', ...VISEMES, 'PP', 'FF', 'TH', 'DD', 'kk', 'CH', 'SS', 'nn', 'RR']
+    .forEach((v) => setMorph('viseme_' + v, 0));
+}
+
+// ── Web Speech: microphone → text (STT) ─────────────────────────────────────
+
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    console.warn('[MIA] Web Speech Recognition not available in this browser');
+    setStatus('Voice input needs Chrome or Edge');
+    return;
+  }
+  recognition = new SR();
+  recognition.lang           = 'en-IN';
+  recognition.interimResults = true;
+  recognition.continuous     = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    let final   = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    if (interim) { showTranscript(interim); setStatus(interim); }
+    if (final) {
+      const clean = final.trim();
+      showTranscript(clean);
+      stopListening();
+      if (clean) handleMessage(clean);
+    }
+  };
+
+  recognition.onerror = (e) => {
+    console.warn('[MIA] recognition error', e.error);
+    setStatus('Mic error: ' + e.error);
+    stopListening();
+  };
+
+  recognition.onend = () => {
+    if (listening) stopListening();
+  };
+}
+
+function startListening() {
+  if (listening || !recognition) return;
+  // If she's mid-sentence, cut her off so the user can interrupt.
+  if (speaking) window.speechSynthesis.cancel();
+  listening = true;
+  micBtn.classList.add('listening');
+  listenRing.style.display = 'block';
+  setStatus('Listening...');
+  try { recognition.start(); } catch (e) { console.warn(e); }
+}
+
+function stopListening() {
+  if (!listening) return;
+  listening = false;
+  micBtn.classList.remove('listening');
+  listenRing.style.display = 'none';
+  try { recognition.stop(); } catch (e) {}
+}
+
+// ── Voice selection (English female preferred, Indian accent bonus) ──────────
+
+function pickVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || !voices.length) return null;
+  const rank = (v) => {
+    let s = 0;
+    if (/en-IN/i.test(v.lang)) s += 5;
+    else if (/en-GB/i.test(v.lang)) s += 4;
+    else if (/en-US/i.test(v.lang)) s += 3;
+    else if (/^en/i.test(v.lang)) s += 2;
+    if (/female|zira|samantha|karen|susan|victoria|neerja|kalpana|heera|swara|aria|jenny|libby/i.test(v.name)) s += 4;
+    if (/google/i.test(v.name)) s += 1;   // Google voices sound noticeably better
+    if (/natural|neural|online|premium|enhanced/i.test(v.name)) s += 2;
+    return s;
+  };
+  return [...voices].sort((a, b) => rank(b) - rank(a))[0];
+}
+
+// ── Speak (browser TTS + manual lipsync) ─────────────────────────────────────
+
+function speak(text) {
+  if (!text) return Promise.resolve();
+  showTranscript('');
+  return new Promise((resolve) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate   = 1.02;
+    u.pitch  = 1.05;
+    u.volume = 1.0;
+    if (!selectedVoice) selectedVoice = pickVoice();
+    if (selectedVoice) u.voice = selectedVoice;
+
+    let mouthTimer = null;
+    let visemeIdx  = 0;
+
+    u.onstart = () => {
+      speaking = true;
+      alertRing.style.display = 'block';
+      setStatus('Speaking...');
+      // Cycle vowel visemes to fake a live-looking mouth. ~9 shapes/sec
+      // reads as natural speech without a real phoneme stream.
+      mouthTimer = setInterval(() => {
+        const cur  = VISEMES[visemeIdx % VISEMES.length];
+        const prev = VISEMES[(visemeIdx - 1 + VISEMES.length) % VISEMES.length];
+        setMorph('viseme_' + prev, 0);
+        setMorph('viseme_' + cur, 0.45 + Math.random() * 0.45);
+        visemeIdx++;
+      }, 110);
+    };
+
+    const finish = () => {
+      if (mouthTimer) clearInterval(mouthTimer);
+      resetVisemes();
+      speaking = false;
+      alertRing.style.display = 'none';
+      setStatus('Press mic to speak');
+      resolve();
+    };
+    u.onend   = finish;
+    u.onerror = (e) => { console.warn('[MIA] tts error', e); finish(); };
+
+    window.speechSynthesis.speak(u);
+  });
+}
+
+// ── Mic toggle ───────────────────────────────────────────────────────────────
+window.toggleMic = function () {
+  listening ? stopListening() : startListening();
+};
+
+// ── Advisor turn (unchanged contract with the backend) ───────────────────────
+
+async function handleMessage(userText) {
+  showTranscript(userText);
+  setStatus('Thinking...');
+  micBtn.classList.add('thinking');
+  try {
+    const resp = await fetch('/advisor-turn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userText }),
+    });
+    const data = await resp.json();
+    // Preserve the postMessage contract expected by web/ and app/ hosts.
+    window.parent?.postMessage({ type: 'mia-advisor-turn', payload: data }, '*');
+    micBtn.classList.remove('thinking');
+    await speak(data.reply || "Sorry, I didn't get a response.");
+  } catch (e) {
+    console.error('[MIA] advisor-turn failed', e);
+    micBtn.classList.remove('thinking');
+    await speak('Sorry, something went wrong on the backend.');
+  }
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+
+if (window.speechSynthesis) {
+  // Voices load asynchronously in Chrome; refresh the choice once they arrive.
+  window.speechSynthesis.onvoiceschanged = () => {
+    selectedVoice = pickVoice();
+  };
+  selectedVoice = pickVoice();
+}
+
+initSpeechRecognition();
+initAvatar();
+</script>
+</body>
+</html>

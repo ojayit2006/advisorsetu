@@ -1,12 +1,20 @@
-backend/.venv/
-**/__pycache__/
-**/.env
-**/.env.local
-**/.env.*.local
-!**/.env.example
-node_modules/
-.next/
-web/.next/
-app/.expo/
+# Environment variables
+.env
+backend/.env
+
+# VS Code
+.vscode/
+
+# Backup files
+*.bak
+
+# Python
+__pycache__/
 *.pyc
-.DS_Store
+
+# Node
+node_modules/
+
+# Build
+dist/
+.next/

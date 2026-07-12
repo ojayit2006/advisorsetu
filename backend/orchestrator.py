@@ -1,135 +1,60 @@
-"""
-Orchestrator — Claude tool-calling loop over the 7 engines + RAG.
-Manual loop (not the beta tool runner) because several tools have side effects
-(explain writes an audit log) and we want a synchronous FastAPI handler.
-"""
-import json
-import os
-
-import anthropic
-
-from config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL
+"""Orchestrator - Gemini tool-calling loop over the 7 engines + RAG."""
+import json, os
+from typing import Any
+import google.generativeai as genai
+from config import GEMINI_API_KEY, GEMINI_MODEL
 from engines import behaviour, explain, life_event, scenario, suitability, surplus, unification
 from rag.retrieval import search_products, search_reg_rules
 from recommendations_store import persist_recommendations
 
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
 
 with open(os.path.join(os.path.dirname(__file__), "prompts", "system_advisor.md"), encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
-TOOLS = [
-    {"name": "unification", "description": "Net worth, cash, holdings, institutions for the customer.",
-     "input_schema": {"type": "object", "properties": {}, "required": []}},
-    {"name": "surplus", "description": "Monthly investable surplus with a breakdown of income/outflows.",
-     "input_schema": {"type": "object", "properties": {}, "required": []}},
-    {"name": "scenario", "description": "Monte Carlo goal probability, and what-if deltas against a named goal.",
-     "input_schema": {"type": "object", "properties": {
-         "goal_name": {"type": "string", "description": "Substring of the goal name, e.g. 'home' or 'car'."},
-         "extra_monthly_contribution": {"type": "number", "description": "Additional monthly investment to simulate."},
-         "one_time_delta": {"type": "number", "description": "One-time inflow (positive) or expense (negative)."},
-     }, "required": []}},
-    {"name": "behaviour", "description": "Spend-creep nudges and a panic-selling proxy flag.",
-     "input_schema": {"type": "object", "properties": {}, "required": []}},
-    {"name": "life_event", "description": "Merchant-signal life events (e.g. wedding) and idle-cash opportunities.",
-     "input_schema": {"type": "object", "properties": {}, "required": []}},
-    {"name": "suitability", "description": "Ranked, risk-matched product recommendations given surplus + triggers.",
-     "input_schema": {"type": "object", "properties": {}, "required": []}},
-    {"name": "search_products", "description": "Keyword search over the product catalog.",
-     "input_schema": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}},
-    {"name": "search_reg_rules", "description": "Keyword search over compliance ground rules.",
-     "input_schema": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}},
-    {"name": "explain", "description": "Wrap a recommendation with inputs->assumptions->reasoning->suitability_tag "
-                                       "and write the audit log. Call this LAST, once, before your final reply.",
-     "input_schema": {"type": "object", "properties": {
-         "recommendation": {
-             "type": "object",
-             "description": "The specific answer/recommendation being explained.",
-             "properties": {
-                 "reason": {"type": "string"}, "message": {"type": "string"},
-                 "suitability_tag": {"type": "string", "enum": ["suitable", "needs_review", "not_suitable"]},
-                 "product_name": {"type": "string"},
-             },
-         },
-     }, "required": ["recommendation"]}},
+FUNCTIONS = [
+    {"name": "unification", "description": "Net worth, cash, holdings, institutions", "parameters": {"type": "object", "properties": {}}},
+    {"name": "surplus", "description": "Monthly investable surplus", "parameters": {"type": "object", "properties": {}}},
+    {"name": "scenario", "description": "Monte Carlo goal probability", "parameters": {"type": "object", "properties": {"goal_name": {"type": "string"}, "extra_monthly_contribution": {"type": "number"}, "one_time_delta": {"type": "number"}}}},
+    {"name": "behaviour", "description": "Spend-creep nudges", "parameters": {"type": "object", "properties": {}}},
+    {"name": "life_event", "description": "Wedding, idle cash", "parameters": {"type": "object", "properties": {}}},
+    {"name": "suitability", "description": "Ranked product recs", "parameters": {"type": "object", "properties": {}}},
+    {"name": "search_products", "description": "Search catalog", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}},
+    {"name": "search_reg_rules", "description": "Search compliance", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}},
+    {"name": "explain", "description": "Add explanation + audit. Call LAST.", "parameters": {"type": "object", "properties": {"recommendation": {"type": "object", "properties": {"reason": {"type": "string"}, "suitability_tag": {"type": "string", "enum": ["suitable", "needs_review", "not_suitable"]}, "product_name": {"type": "string"}}, "required": ["reason", "suitability_tag"]}}, "required": ["recommendation"]}},
 ]
 
-MAX_ITERATIONS = 8
+MAX_ITER = 8
 
+def _exec(name, inp, cid, cache):
+    if name == "unification": r = unification.run(cid)
+    elif name == "surplus": r = surplus.run(cid)
+    elif name == "scenario": r = scenario.run(cid, inp.get("goal_name"), inp.get("extra_monthly_contribution",0), inp.get("one_time_delta",0))
+    elif name == "behaviour": r = behaviour.run(cid)
+    elif name == "life_event": r = life_event.run(cid)
+    elif name == "suitability": r = suitability.run(cid); persist_recommendations(cid, r["value"]["recommendations"])
+    elif name == "search_products": return {"products": search_products(inp["query"])}
+    elif name == "search_reg_rules": return {"rules": search_reg_rules(inp["query"])}
+    elif name == "explain": r = explain.run(cid, cache, inp["recommendation"])
+    else: return {"error": f"Unknown {name}"}
+    cache[name] = r
+    return r
 
-def _execute_tool(name: str, tool_input: dict, customer_id: str, engine_cache: dict) -> dict:
-    if name == "unification":
-        result = unification.run(customer_id)
-    elif name == "surplus":
-        result = surplus.run(customer_id)
-    elif name == "scenario":
-        result = scenario.run(customer_id, tool_input.get("goal_name"),
-                               tool_input.get("extra_monthly_contribution", 0),
-                               tool_input.get("one_time_delta", 0))
-    elif name == "behaviour":
-        result = behaviour.run(customer_id)
-    elif name == "life_event":
-        result = life_event.run(customer_id)
-    elif name == "suitability":
-        result = suitability.run(customer_id)
-        persist_recommendations(customer_id, result["value"]["recommendations"])
-    elif name == "search_products":
-        return {"products": search_products(tool_input["query"])}
-    elif name == "search_reg_rules":
-        return {"rules": search_reg_rules(tool_input["query"])}
-    elif name == "explain":
-        result = explain.run(customer_id, engine_cache, tool_input["recommendation"])
-    else:
-        return {"error": f"Unknown tool {name}"}
-
-    engine_cache[name] = result
-    return result
-
-
-def run_advisor_turn(customer_id: str, message: str) -> dict:
-    messages = [{"role": "user", "content": message}]
-    engine_cache = {}
-    cards = []
-    audit_id = None
-    suitability_tag = None
-    rationale = None
-
-    for _ in range(MAX_ITERATIONS):
-        response = client.messages.create(
-            model=ANTHROPIC_MODEL,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            tools=TOOLS,
-            thinking={"type": "adaptive"},
-            output_config={"effort": "medium"},
-            messages=messages,
-        )
-
-        if response.stop_reason != "tool_use":
-            reply = next((b.text for b in response.content if b.type == "text"), "")
-            return {
-                "reply": reply, "cards": cards, "rationale": rationale,
-                "suitability_tag": suitability_tag, "audit_id": audit_id,
-            }
-
-        messages.append({"role": "assistant", "content": response.content})
-        tool_results = []
-        for block in response.content:
-            if block.type != "tool_use":
-                continue
-            result = _execute_tool(block.name, block.input, customer_id, engine_cache)
-            if block.name in ("surplus", "scenario", "suitability", "life_event", "behaviour"):
-                cards.append({"type": block.name, "data": result.get("value", result)})
-            if block.name == "explain":
-                rationale = result["value"]["rationale"]
-                suitability_tag = result["value"]["suitability_tag"]
-                audit_id = result["value"]["audit_id"]
-            tool_results.append({
-                "type": "tool_result", "tool_use_id": block.id, "content": json.dumps(result, default=str),
-            })
-        messages.append({"role": "user", "content": tool_results})
-
-    return {
-        "reply": "I'm still working through that — could you ask again in a moment?",
-        "cards": cards, "rationale": rationale, "suitability_tag": suitability_tag, "audit_id": audit_id,
-    }
+def run_advisor_turn(customer_id, message):
+    model = genai.GenerativeModel(model_name=GEMINI_MODEL, system_instruction=SYSTEM_PROMPT, tools=[{"function_declarations": FUNCTIONS}])
+    chat = model.start_chat()
+    cache, cards, audit_id, tag, rationale = {}, [], None, None, None
+    msg = message
+    for _ in range(MAX_ITER):
+        try: resp = chat.send_message(msg)
+        except Exception as e: return {"reply": f"Error: {str(e)[:200]}", "cards": cards, "rationale": rationale, "suitability_tag": tag, "audit_id": audit_id}
+        fcs = [p for p in resp.parts if p.function_call]
+        if not fcs: return {"reply": resp.text or "Not sure.", "cards": cards, "rationale": rationale, "suitability_tag": tag, "audit_id": audit_id}
+        parts = []
+        for p in fcs:
+            fn = p.function_call; result = _exec(fn.name, {k:v for k,v in fn.args.items()}, customer_id, cache)
+            if fn.name in ("surplus","scenario","suitability","life_event","behaviour"): cards.append({"type": fn.name, "data": result.get("value",result)})
+            if fn.name == "explain": rationale = result["value"]["rationale"]; tag = result["value"]["suitability_tag"]; audit_id = result["value"]["audit_id"]
+            parts.append(genai.protos.Part(function_response=genai.protos.FunctionResponse(name=fn.name, response={"result": json.loads(json.dumps(result, default=str))})))
+        msg = genai.protos.Content(parts=parts, role="user")
+    return {"reply": "Still thinking - ask again?", "cards": cards, "rationale": rationale, "suitability_tag": tag, "audit_id": audit_id}

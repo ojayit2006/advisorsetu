@@ -4,315 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>MIA — Wealth Advisor</title>
+<script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.14/dist/dotlottie-wc.js" type="module"></script>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-html, body { width:100%; height:100%; background:#0f172a; overflow:hidden; font-family:monospace; }
-
-#video-container {
-  width:100%; height:100%;
-  position:relative;
-  display:flex; align-items:center; justify-content:center;
-}
-#avatar-video { width:100%; height:100%; object-fit:cover; pointer-events:none; }
-
-#alert-ring {
-  display:none; position:absolute; inset:0;
-  border:3px solid #f59e0b;
-  box-shadow:0 0 28px rgba(245,158,11,0.7);
-  animation:pulse 1s ease infinite; pointer-events:none;
-}
-#listen-ring {
-  display:none; position:absolute; inset:0;
-  border:3px solid #22c55e;
-  box-shadow:0 0 28px rgba(34,197,94,0.6);
-  animation:pulse 0.8s ease infinite; pointer-events:none;
-}
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-#mic-btn {
-  position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-  width:72px; height:72px; border-radius:50%;
-  border:3px solid rgba(255,255,255,0.25);
-  background:rgba(15,23,42,0.9); cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:all .2s; z-index:10;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5);
-}
-#mic-btn:hover { background:rgba(30,58,138,0.95); border-color:#60a5fa; }
-#mic-btn.listening { background:rgba(21,128,61,0.95); border-color:#22c55e; box-shadow:0 0 24px rgba(34,197,94,0.5); }
-#mic-btn.thinking  { background:rgba(30,58,138,0.95); border-color:#818cf8; }
-#mic-icon { width:32px; height:32px; fill:rgba(255,255,255,0.9); }
-
-#status {
-  position:absolute; bottom:108px; left:50%; transform:translateX(-50%);
-  font-size:11px; color:rgba(255,255,255,0.6);
-  background:rgba(0,0,0,0.55); padding:4px 14px; border-radius:20px;
-  white-space:nowrap; pointer-events:none;
-}
-#transcript {
-  position:absolute; bottom:140px; left:50%; transform:translateX(-50%);
-  font-size:12px; color:#fbbf24; background:rgba(0,0,0,0.65);
-  padding:5px 16px; border-radius:20px; max-width:92%;
-  text-align:center; white-space:nowrap; overflow:hidden;
-  text-overflow:ellipsis; display:none;
-}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#0f172a;overflow:hidden;font-family:system-ui,-apple-system,sans-serif}
+#c{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative}
+dotlottie-wc{width:300px;height:300px;position:relative;z-index:2}
+#ring{position:absolute;width:340px;height:340px;border-radius:50%;border:3px solid transparent;pointer-events:none;z-index:1;transition:all .3s}
+#ring.speaking{border-color:#f59e0b;box-shadow:0 0 30px rgba(245,158,11,0.6);animation:pulse 1s ease infinite}
+#ring.listening{border-color:#22c55e;box-shadow:0 0 30px rgba(34,197,94,0.5);animation:pulse .8s ease infinite}
+#ring.thinking{border-color:#818cf8;box-shadow:0 0 30px rgba(129,140,248,0.5);animation:pulse .6s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#g{position:absolute;top:30px;font-size:22px;color:#fff;font-weight:700;letter-spacing:2px;z-index:3}
+#s{position:absolute;bottom:110px;font-size:12px;color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.55);padding:4px 14px;border-radius:20px;white-space:nowrap;z-index:3}
+#t{position:absolute;bottom:145px;font-size:12px;color:#fbbf24;background:rgba(0,0,0,0.65);padding:5px 16px;border-radius:20px;max-width:90%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none;z-index:3}
+#m{position:absolute;bottom:24px;width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,0.25);background:rgba(15,23,42,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+#m:hover{background:rgba(30,58,138,0.95);border-color:#60a5fa}
+#m.l{background:rgba(21,128,61,0.95);border-color:#22c55e}
+#m.t{background:rgba(30,58,138,0.95);border-color:#818cf8}
+#i{width:32px;height:32px;fill:rgba(255,255,255,0.9)}
 </style>
 </head>
 <body>
-<div id="video-container">
-  <video id="avatar-video" autoplay playsinline></video>
-  <div id="alert-ring"></div>
-  <div id="listen-ring"></div>
-  <div id="transcript"></div>
-  <div id="status">Connecting...</div>
-  <button id="mic-btn" onclick="toggleMic()" title="Tap to speak">
-    <svg id="mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v7a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-1 17.93V23h2v-2.07A8.001 8.001 0 0 0 20 13h-2a6 6 0 0 1-12 0H4a8.001 8.001 0 0 0 7 7.93z"/>
-    </svg>
-  </button>
+<div id="c">
+<div id="g">MIA</div>
+<div style="position:relative;display:flex;align-items:center;justify-content:center">
+<div id="ring"></div>
+<dotlottie-wc id="l" src="https://lottie.host/8acce412-0d9d-4dd1-9ebf-f3ea131759f3/KGqL1aPxlf.json" style="width:300px;height:300px" autoplay loop></dotlottie-wc>
 </div>
-
-<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+<div id="t"></div>
+<div id="s">Press mic to speak</div>
+<button id="m" onclick="tm()">
+<svg id="i" viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v7a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-1 17.93V23h2v-2.07A8.001 8.001 0 0 0 20 13h-2a6 6 0 0 1-12 0H4a8.001 8.001 0 0 0 7 7.93z"/></svg>
+</button>
+</div>
 <script>
-let SPEECH_KEY = null;
-let SPEECH_REGION = null;
-
-const videoEl      = document.getElementById('avatar-video');
-const statusEl     = document.getElementById('status');
-const alertRing    = document.getElementById('alert-ring');
-const listenRing   = document.getElementById('listen-ring');
-const transcriptEl = document.getElementById('transcript');
-const micBtn       = document.getElementById('mic-btn');
-
-let synthesizer = null;
-let connected   = false;
-let speaking    = false;
-let listening   = false;
-
-// Realtime transcription
-let rtWs           = null;
-let audioCtx       = null;
-let audioProcessor = null;
-let silenceTimer   = null;
-let finalizing     = false;
-
-function setStatus(msg) { statusEl.textContent = msg; }
-function showTranscript(t) { transcriptEl.textContent = t; transcriptEl.style.display = t ? 'block' : 'none'; }
-
-function resetSilenceTimer() {
-  clearTimeout(silenceTimer);
-  silenceTimer = setTimeout(() => {
-    if (listening) stopListening();
-  }, 1800);
-}
-
-// ── Audio helpers ─────────────────────────────────────────────────────────────
-
-function float32ToInt16(float32) {
-  const int16 = new Int16Array(float32.length);
-  for (let i = 0; i < float32.length; i++) {
-    const s = Math.max(-1, Math.min(1, float32[i]));
-    int16[i] = s < 0 ? s * 32768 : s * 32767;
-  }
-  return int16;
-}
-
-// ── Realtime transcription ────────────────────────────────────────────────────
-
-async function startListening() {
-  if (listening) return;
-  listening = true;
-  finalizing = false;
-  micBtn.classList.add('listening');
-  listenRing.style.display = 'block';
-  setStatus('Listening...');
-
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  rtWs = new WebSocket(`${proto}//${location.host}/stt-ws`);
-
-  rtWs.onopen = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      audioCtx = new AudioContext({ sampleRate: 16000 });
-      const src = audioCtx.createMediaStreamSource(stream);
-      audioProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
-      audioProcessor.onaudioprocess = (e) => {
-        if (rtWs?.readyState !== WebSocket.OPEN) return;
-        const int16 = float32ToInt16(e.inputBuffer.getChannelData(0));
-        rtWs.send(int16.buffer);
-      };
-      src.connect(audioProcessor);
-      audioProcessor.connect(audioCtx.destination);
-    } catch (e) {
-      setStatus('Mic error: ' + e.message);
-      stopListening();
-    }
-  };
-
-  rtWs.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if (msg.type === 'partial') {
-      setStatus(msg.text);
-      showTranscript(msg.text);
-      resetSilenceTimer();
-    } else if (msg.type === 'final') {
-      const text = msg.text.trim();
-      stopListening({ fromFinal: true });
-      if (text) handleMessage(text);
-      else setStatus('Press mic to speak');
-    }
-  };
-
-  rtWs.onclose = () => {
-    finalizing = false;
-    audioProcessor?.disconnect();
-    audioCtx?.close();
-    audioCtx = null; audioProcessor = null;
-  };
-}
-
-function stopListening(options = {}) {
-  if (!listening && !(options.fromFinal && finalizing)) return;
-  listening = false;
-  micBtn.classList.remove('listening');
-  listenRing.style.display = 'none';
-  showTranscript('');
-  clearTimeout(silenceTimer);
-
-  if (!options.fromFinal && rtWs?.readyState === WebSocket.OPEN) {
-    finalizing = true;
-    setStatus('Processing...');
-    rtWs.send('__END__');
-    setTimeout(() => {
-      if (finalizing && rtWs) {
-        finalizing = false;
-        rtWs.close();
-        rtWs = null;
-      }
-    }, 7000);
-    return;
-  }
-
-  finalizing = false;
-  if (rtWs) {
-    if (rtWs.readyState === WebSocket.OPEN) rtWs.send('__END__');
-    rtWs.close();
-    rtWs = null;
-  }
-}
-
-// ── Avatar connection ─────────────────────────────────────────────────────────
-
-async function connect() {
-  setStatus('Fetching relay token...');
-  try {
-    const iceResp = await fetch('/ice-token');
-    if (!iceResp.ok) throw new Error('ICE token failed: ' + iceResp.status);
-    const iceData = await iceResp.json();
-    SPEECH_KEY = iceData.speech_key || iceData.SpeechKey || SPEECH_KEY;
-    SPEECH_REGION = iceData.speech_region || iceData.SpeechRegion || SPEECH_REGION;
-    const uris = iceData.Uris || iceData.uris || iceData.urls || iceData.Urls || [];
-    const uriArray = Array.isArray(uris) ? uris : [uris];
-    const iceServers = uriArray.length > 0
-      ? [{ urls: uriArray, username: iceData.Username || iceData.username, credential: iceData.Password || iceData.password }]
-      : [{ urls: 'stun:stun.l.google.com:19302' }];
-
-    setStatus('Connecting...');
-    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(SPEECH_KEY, SPEECH_REGION);
-    speechConfig.speechSynthesisVoiceName = "en-US-AvaMultilingualNeural";
-
-    const videoFormat  = new SpeechSDK.AvatarVideoFormat();
-    videoFormat.width  = 1920;
-    videoFormat.height = 1080;
-
-    const avatarConfig = new SpeechSDK.AvatarConfig("Meg", "business", videoFormat);
-    avatarConfig.backgroundColor = "#0F172AFF";
-
-    synthesizer = new SpeechSDK.AvatarSynthesizer(speechConfig, avatarConfig);
-    synthesizer.avatarEventReceived = (s, e) => {
-      if (e.description === 'SwitchToSpeaking') {
-        speaking = true; alertRing.style.display = 'block'; setStatus('Speaking...');
-      } else if (e.description === 'SwitchToIdle' || e.description === 'TurnEnd') {
-        onIdle();
-      }
-    };
-
-    const pc = new RTCPeerConnection({ iceServers });
-    pc.ontrack = e => {
-      if (e.track.kind === 'video') {
-        videoEl.srcObject = e.streams[0];
-        videoEl.onloadedmetadata = () => videoEl.play().catch(console.error);
-      } else {
-        const a = document.createElement('audio');
-        a.autoplay = true; a.srcObject = e.streams[0]; document.body.appendChild(a);
-      }
-    };
-    pc.addTransceiver('video', { direction: 'sendrecv' });
-    pc.addTransceiver('audio', { direction: 'recvonly' });
-
-    const result = await synthesizer.startAvatarAsync(pc);
-    if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-      connected = true;
-      setStatus('Press mic to speak');
-      setTimeout(() => speak("Hi, I'm MIA, your wealth advisor. How can I help you today?"), 1500);
-    } else {
-      setStatus('Failed — ' + (result.errorDetails || ''));
-      setTimeout(connect, 8000);
-    }
-  } catch(err) {
-    setStatus('Error: ' + err.message);
-    setTimeout(connect, 8000);
-  }
-}
-
-// ── Speak ─────────────────────────────────────────────────────────────────────
-
-function speak(text) {
-  if (!synthesizer || !connected) return;
-  showTranscript('');
-  synthesizer.speakTextAsync(
-    text,
-    () => {
-      const fallbackMs = Math.max(4000, text.length * 55);
-      setTimeout(() => { if (speaking) onIdle(); }, fallbackMs);
-    },
-    err => { console.error('[MIA] speak error', err); onIdle(); }
-  );
-}
-
-function onIdle() {
-  if (!speaking) return;
-  speaking = false;
-  alertRing.style.display = 'none';
-  setStatus('Press mic to speak');
-}
-
-// ── Manual mic button ─────────────────────────────────────────────────────────
-
-function toggleMic() {
-  listening ? stopListening() : startListening();
-}
-
-// ── Chat ──────────────────────────────────────────────────────────────────────
-
-async function handleMessage(userText) {
-  showTranscript(userText);
-  setStatus('Thinking...');
-  try {
-    const resp = await fetch('/advisor-turn', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: userText }),
-    });
-    const data = await resp.json();
-    window.parent?.postMessage({ type: 'mia-advisor-turn', payload: data }, '*');
-    speak(data.reply || "Sorry, I didn't get a response.");
-  } catch(e) {
-    speak("Sorry, something went wrong.");
-  }
-}
-
-connect();
+const s=document.getElementById('s'),r=document.getElementById('ring'),t=document.getElementById('t'),m=document.getElementById('m'),l=document.getElementById('l');
+let rec=null,v=null,li=false,sp=false;
+function st(x){s.textContent=x}
+function stt(x){t.textContent=x;t.style.display=x?'block':'none'}
+function mo(x){r.className=x;m.className=x=='listening'?'l':x=='thinking'?'t':''}
+function sr(){
+const S=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!S){st('Need Chrome/Edge');return}
+rec=new S();rec.lang='en-IN';rec.interimResults=true;rec.continuous=false;
+rec.onresult=e=>{let i='',f='';for(let k=e.resultIndex;k<e.results.length;k++){const u=e.results[k][0].transcript;e.results[k].isFinal?f+=u:i+=u}if(i){stt(i);st(i)}if(f){stt(f);sl();if(f.trim())at(f.trim())}};
+rec.onerror=e=>{st('Mic: '+e.error);sl()};rec.onend=()=>{if(li)sl()}}
+function sl(){if(!li||!rec)return;li=false;mo('');st('Press mic to speak');rec.stop()}
+function ls(){if(li||!rec)return;if(sp)speechSynthesis.cancel();li=true;mo('listening');st('Listening...');rec.start()}
+window.tm=()=>li?sl():ls()
+function pv(){const vv=speechSynthesis.getVoices();if(!vv||!vv.length)return null;const r=x=>{let s=0;if(/en-IN/i.test(x.lang))s+=5;else if(/en-GB/i.test(x.lang))s+=4;else if(/en-US/i.test(x.lang))s+=3;else if(/^en/i.test(x.lang))s+=2;if(/female|zira|samantha|karen|neerja|heera|aria|jenny|microsoft/i.test(x.name))s+=4;if(/google|natural|neural|online|premium/i.test(x.name))s+=2;return s};return[...vv].sort((a,b)=>r(b)-r(a))[0]}
+function spk(t){if(!t)return Promise.resolve();return new Promise(r=>{const u=new SpeechSynthesisUtterance(t);u.rate=1.02;u.pitch=1.05;u.volume=1;if(!v)v=pv();if(v)u.voice=v;u.onstart=()=>{sp=true;mo('speaking');st('Speaking...')};const d=()=>{sp=false;mo('');st('Press mic to speak');r()};u.onend=d;u.onerror=d;speechSynthesis.speak(u)})}
+async function at(t){mo('thinking');st('Thinking...');try{const r=await fetch('/advisor-turn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:t})});const d=await r.json();window.parent?.postMessage({type:'mia-advisor-turn',payload:d},'*');mo('');await spk(d.reply||'Sorry')}catch(e){mo('');await spk('Sorry, something went wrong.')}}
+if(speechSynthesis){speechSynthesis.onvoiceschanged=()=>{v=pv()};v=pv()}
+sr();st('Press mic to speak');
 </script>
 </body>
 </html>

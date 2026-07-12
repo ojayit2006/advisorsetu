@@ -1,5 +1,6 @@
 import asyncio
 import os
+from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -11,17 +12,36 @@ import azure.cognitiveservices.speech as speechsdk
 
 from aa_mock.aa_service import create_consent, fetch_fi_data
 from audit import recent_audit_logs
-from config import SPEECH_KEY, SPEECH_REGION
+from config import (
+    SPEECH_KEY, SPEECH_REGION, TAVUS_API_KEY, TAVUS_REPLICA_ID, TAVUS_WEBHOOK_BASE_URL,
+)
 from engines.scenario import run as run_scenario
 from engines.suitability import run as run_suitability
 from engines.unification import build_twin_state
 from orchestrator import run_advisor_turn
 from recommendations_store import persist_recommendations
+from tavus import TavusClient, TavusError
+from turn_store import TurnStore
 from twin_data import default_customer_id, get_goals
 
 AVATAR_DIR = os.path.join(os.path.dirname(__file__), "..", "avatar")
 
-app = FastAPI(title="MIA Wealth backend")
+tavus_client: TavusClient | None = None
+turn_store: TurnStore | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global tavus_client, turn_store
+    turn_store = TurnStore(max_age=1800.0)
+    if TAVUS_API_KEY:
+        tavus_client = TavusClient()
+    yield
+    turn_store = None
+    tavus_client = None
+
+
+app = FastAPI(title="MIA Wealth backend", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
@@ -32,9 +52,13 @@ async def root():
     return FileResponse(os.path.join(AVATAR_DIR, "index.html"))
 
 
+@app.get("/avatar-legacy")
+async def root_legacy():
+    return FileResponse(os.path.join(AVATAR_DIR, "index_legacy.html"))
+
+
 @app.get("/ice-token")
 async def ice_token():
-    """Azure TTS relay ICE token for the MIA avatar WebRTC connection. Reused verbatim from kumbhsaathi-ipad."""
     url = f"https://{SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/avatar/relay/token/v1"
     async with httpx.AsyncClient(timeout=10) as hc:
         resp = await hc.get(url, headers={"Ocp-Apim-Subscription-Key": SPEECH_KEY})
@@ -48,7 +72,6 @@ async def ice_token():
 
 @app.websocket("/stt-ws")
 async def stt_ws(websocket: WebSocket):
-    """Stream mic audio -> Azure STT -> partial/final transcripts. Reused verbatim from kumbhsaathi-ipad."""
     await websocket.accept()
     loop = asyncio.get_running_loop()
     msg_queue: asyncio.Queue = asyncio.Queue()
@@ -189,3 +212,74 @@ async def customer_recommendations(customer_id: str):
 @app.get("/audit-logs")
 async def audit_logs(limit: int = 50):
     return {"logs": recent_audit_logs(limit)}
+
+
+# ── Tavus AI Avatar endpoints ────────────────────────────────────────────
+
+class TavusConversationRequest(BaseModel):
+    customer_id: str | None = None
+
+
+@app.post("/tavus/conversations")
+async def tavus_create_conversation(body: TavusConversationRequest):
+    if not tavus_client:
+        return JSONResponse({"error": "Tavus not configured"}, status_code=502)
+    customer_id = body.customer_id or default_customer_id()
+    webhook_url = f"{TAVUS_WEBHOOK_BASE_URL}/tavus-webhook"
+    try:
+        result = await tavus_client.create_conversation(webhook_url=webhook_url, customer_id=customer_id)
+    except TavusError as e:
+        return JSONResponse({"error": "Tavus conversation failed", "detail": str(e)}, status_code=e.status or 502)
+    conversation_id = result.get("conversation_id", "")
+    conversation_url = result.get("conversation_url", "")
+    turn_store.register_conversation(conversation_id, customer_id)
+    return {"conversation_id": conversation_id, "conversation_url": conversation_url, "status": result.get("status", "created")}
+
+
+class TavusWebhookPayload(BaseModel):
+    conversation_id: str = ""
+    message: str = ""
+    transcript: str | None = None
+    query: str | None = None
+    turn_id: str | None = None
+
+
+@app.post("/tavus-webhook")
+async def tavus_webhook(payload: TavusWebhookPayload):
+    conv_id = payload.conversation_id
+    user_message = (payload.message or payload.transcript or payload.query or "").strip()
+    if not conv_id or not user_message:
+        return {"response": "I didn't catch that - could you say it again?"}
+    customer_id = turn_store.get_customer_id(conv_id) or default_customer_id()
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, run_advisor_turn, customer_id, user_message)
+    except Exception:
+        return {"response": "Sorry, I hit a hiccup processing that. Could you rephrase?"}
+    turn_store.append_turn(conv_id, result)
+    return {"response": result.get("reply", "")}
+
+
+@app.get("/tavus/response/{conversation_id}")
+async def tavus_get_responses(conversation_id: str, since_turn_id: str | None = None):
+    turns = turn_store.get_turns(conversation_id, since_turn_id=since_turn_id)
+    return {"turns": turns, "has_more": False}
+
+
+@app.post("/tavus/conversations/{conversation_id}/end")
+async def tavus_end_conversation(conversation_id: str):
+    if tavus_client:
+        try:
+            await tavus_client.end_conversation(conversation_id)
+        except TavusError:
+            pass
+    turn_store.remove_conversation(conversation_id)
+    return {"status": "ended"}
+
+
+@app.get("/tavus/conversations/{conversation_id}")
+async def tavus_get_conversation(conversation_id: str):
+    status = turn_store.get_conversation_status(conversation_id)
+    if status is None:
+        return JSONResponse({"error": "Conversation not found"}, status_code=404)
+    return status
