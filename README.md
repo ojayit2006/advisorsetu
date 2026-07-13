@@ -1,89 +1,114 @@
-# MIA Wealth — IDBI Bank Hackathon
+# MIA Wealth
 
-Avatar-based AI wealth advisor. MIA (the avatar) is the interface; the **Financial Twin** — a
-continuously-updated, explainable model of the customer's whole financial life — is the moat.
-Full architecture/rationale in [`PLAN.md`](PLAN.md); backend API contract in [`CONTRACT.md`](CONTRACT.md).
+Avatar-based AI wealth advisor powered by the **Financial Twin** — a continuously-updated, explainable model of a customer's complete financial life.
+
+## Architecture
 
 ```
-web/      Next.js bank/RM console  (Customer 360, Recommendation feed, Audit, RM co-pilot, Landing)
-app/      Expo customer app       (Onboarding/AA consent, Twin Home, MIA, Simulate, Rec detail)
-avatar/   MIA avatar page         (Azure Avatar WebRTC + STT, reused verbatim from kumbhsaathi)
-backend/  FastAPI brain           (7 engines, orchestrator, AA mock, avatar endpoints)
-shared/supabase/  schema.sql + seed.py for the real Postgres/Supabase project
+CUSTOMER APP (Expo)   ──┐
+RM CONSOLE (Next.js)  ──┼── API ──▶ FastAPI Backend
+       │ embeds         │
+  MIA AVATAR (Tavus PAL)
+       │ transcript
+       ▼
+  FastAPI ── /advisor-turn ──▶ ORCHESTRATOR (LLM + tools)
+                                  ├─ Unification / Financial Twin
+                                  ├─ Surplus · Scenario Simulation
+                                  ├─ Behaviour · Life-Event Detection
+                                  ├─ Suitability / Recommendations
+                                  └─ Explainability / Compliance ──▶ Audit Log
 ```
 
-## Fastest path to a working demo: MOCK_MODE (no accounts needed)
+## Tech Stack
 
-The backend runs **without Supabase** by default — it serves a deterministic seeded customer
-("Rahul Verma") straight out of `backend/aa_mock/fixtures.py`. This is the resilience path called
-out in `PLAN.md`'s risk register ("Live API flakiness → mock-mode flag → deterministic canned
-engine outputs") — it's not a fallback, it's the recommended way to run the demo.
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 16 + TypeScript + Tailwind CSS |
+| **Backend** | FastAPI + Python 3.11 |
+| **LLM** | Google Gemini 2.0 Flash |
+| **Data** | Realistic mock financial data ||
+
+## Project Structure
+
+```
+mia-wealth/
+├─ backend/        FastAPI — 7 engines, LLM orchestrator, avatar endpoints
+├─ web/            Next.js RM console — Customer 360, Recommendations, Audit, Co-pilot
+├─ app/            Expo customer mobile app — Twin Home, MIA, Simulate, Goals
+├─ avatar/         MIA avatar page 
+└─ shared/         Schema + seed data for Supabase
+```
+
+## Quick Start
+
+### Backend
 
 ```bash
 cd backend
-python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
 cp .env.example .env
-# fill in at minimum: GEMINI_API_KEY (for the orchestrator LLM; GROQ_API_KEY as an optional fallback)
-#                      SPEECH_KEY + SPEECH_REGION (for the MIA avatar; leave blank to skip voice)
-uvicorn main:app --reload --port 8000
+# Configure LLM API key
+uvicorn main:app --reload --port 8001
 ```
 
-Verify it's alive:
+Verify:
 
 ```bash
-curl http://localhost:8000/customers/default
-curl http://localhost:8000/customers/00000000-0000-0000-0000-000000000001/twin
-curl -X POST http://localhost:8000/advisor-turn -H "Content-Type: application/json" \
-     -d '{"message": "How much can I invest this month?"}'
+curl http://localhost:8001/customers/default
+curl -X POST http://localhost:8001/advisor-turn \
+  -H "Content-Type: application/json" \
+  -d '{"message": "How much can I invest this month?"}'
 ```
 
-Open `http://localhost:8000/` in a browser to see the MIA avatar directly (needs `SPEECH_KEY`/
-`SPEECH_REGION` set to actually connect; without them it'll show a connection error but the
-`/advisor-turn` text API still works standalone).
-
-## Going to real Supabase (optional, for judges who want to see live persistence/realtime)
-
-1. Create a Supabase project. Run `shared/supabase/schema.sql` in the SQL editor.
-2. Fill `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` in `backend/.env` (unsets `MOCK_MODE`
-   automatically — the backend switches to real Supabase reads/writes).
-3. Seed the demo customer: `cd shared/supabase && pip install requests python-dotenv && python seed.py`
-   (or `python seed.py --dry-run` to preview without writing).
-4. The web console's Recommendation feed and Audit page will pick up Postgres Realtime
-   automatically if you also give them `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-
-## Web console
+### Web Console
 
 ```bash
 cd web
 npm install
-cp .env.example .env.local   # set NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+cp .env.example .env.local
+# Set NEXT_PUBLIC_BACKEND_URL=http://localhost:8001
 npm run dev
 ```
 
-## Customer app (Expo)
+Open **http://localhost:3000**
 
-```bash
-cd app
-npm install
-npx expo start
-```
-Point the app's backend URL config at your machine's LAN IP (not `localhost`) if testing on a
-physical device via Expo Go — see `app/README.md`.
+### MIA Avatar
 
-## Demo script (5 min, one customer, one brain)
+The avatar loads directly in the RM Co-pilot page. Click **Start conversation** to begin voice interaction.
 
-0:00 AA consent → "complete picture" · 1:00 "How much can I invest?" → surplus + Why · 2:00 "What
-if I buy a car?" → home goal probability drops live · 2:45 idle-cash + wedding nudge · 3:30
-dining-creep nudge · 4:15 "Why trust this?" → suitability tag + audit log · 4:45 business case.
-Switch to the web console once to show the RM feed + audit trail updating in realtime.
+## Features
 
-## What's real vs. mocked
+### 7 Financial Engines
 
-- **Real, computed live (not scripted):** Surplus, Monte Carlo goal-probability simulation,
-  spend-creep detection, life-event/idle-cash rules, suitability filtering, and the full
-  explainability/audit trail — all run against the seeded transaction history in
-  `backend/aa_mock/fixtures.py`, not hardcoded numbers.
-- **Mocked by design (documented, not hidden):** live Account Aggregator (real ReBIT-shaped JSON,
-  fake consent handshake — see `backend/aa_mock/aa_service.py`); RAG over `product_catalog`/
-  `reg_rules.md` is keyword-scored, not pgvector embeddings (same call signature, swappable later).
+| Engine | What It Does |
+|---|---|
+| **Unification** | Aggregates accounts, holdings, transactions into one Financial Twin |
+| **Surplus** | Calculates monthly investable surplus (income - outflows - safety buffer) |
+| **Scenario Simulation** | Monte Carlo goal-probability with live what-if adjustments |
+| **Behaviour Detection** | Flags spend creep and panic-selling patterns |
+| **Life-Event Detection** | Identifies wedding signals, idle cash, and life-stage triggers |
+| **Suitability** | Risk-matched product recommendations from catalog |
+| **Explainability** | Structured rationale + suitability tag + immutable audit trail |
+
+### RM Console Screens
+
+- **Customer 360** — Financial Twin: net worth, cash, holdings, goals, asset allocation
+- **Simulate** — Live what-if scenario planner with Monte Carlo probability
+- **Recommendations** — Suitability-matched product feed with realtime updates
+- **Audit & Compliance** — Every decision logged with actor, action, and PII tracking
+- **Co-pilot** — MIA avatar panel + text fallback + live rationale display
+
+### Explainability Layer
+
+Every recommendation carries:
+- **Suitability tag** — `suitable` / `needs_review` / `not_suitable`
+- **Structured rationale** — inputs → assumptions → reasoning → risk disclosure
+- **Audit log entry** — immutable record with actor, action, and metadata
+
+## Deployment
+
+- **Frontend:** Deploy `web/` on Vercel (`NEXT_PUBLIC_BACKEND_URL` → backend URL)
+- **Backend:** Deploy `backend/` on Render (Python, `uvicorn main:app`)
+- **Avatar:** Tavus PAL deployment configured via Tavus dashboard
+
+Detailed API contract in [`CONTRACT.md`](CONTRACT.md). Architecture plan in [`PLAN.md`](PLAN.md).
