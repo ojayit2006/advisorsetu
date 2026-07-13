@@ -113,5 +113,4 @@ Every recommendation carries:
 ## Live Demo
 
 - **Web App:** https://advisorsetu.vercel.app
-- **Avatar:** Tavus PAL deployment configured via Tavus dashboard
 
