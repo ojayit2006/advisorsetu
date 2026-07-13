@@ -3,61 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>MIA — Wealth Advisor</title>
-<script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.14/dist/dotlottie-wc.js" type="module"></script>
+<title>MIA</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;background:#0f172a;overflow:hidden;font-family:system-ui,-apple-system,sans-serif}
-#c{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative}
-dotlottie-wc{width:300px;height:300px;position:relative;z-index:2}
-#ring{position:absolute;width:340px;height:340px;border-radius:50%;border:3px solid transparent;pointer-events:none;z-index:1;transition:all .3s}
-#ring.speaking{border-color:#f59e0b;box-shadow:0 0 30px rgba(245,158,11,0.6);animation:pulse 1s ease infinite}
-#ring.listening{border-color:#22c55e;box-shadow:0 0 30px rgba(34,197,94,0.5);animation:pulse .8s ease infinite}
-#ring.thinking{border-color:#818cf8;box-shadow:0 0 30px rgba(129,140,248,0.5);animation:pulse .6s ease infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-#g{position:absolute;top:30px;font-size:22px;color:#fff;font-weight:700;letter-spacing:2px;z-index:3}
-#s{position:absolute;bottom:110px;font-size:12px;color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.55);padding:4px 14px;border-radius:20px;white-space:nowrap;z-index:3}
-#t{position:absolute;bottom:145px;font-size:12px;color:#fbbf24;background:rgba(0,0,0,0.65);padding:5px 16px;border-radius:20px;max-width:90%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none;z-index:3}
-#m{position:absolute;bottom:24px;width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,0.25);background:rgba(15,23,42,0.9);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
-#m:hover{background:rgba(30,58,138,0.95);border-color:#60a5fa}
-#m.l{background:rgba(21,128,61,0.95);border-color:#22c55e}
-#m.t{background:rgba(30,58,138,0.95);border-color:#818cf8}
-#i{width:32px;height:32px;fill:rgba(255,255,255,0.9)}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%; overflow:hidden;
+  font-family:system-ui,-apple-system,sans-serif;
+  background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color:#f1f5f9;
+}
+#container {
+  width:100%; height:100%; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:20px; padding:32px;
+  text-align:center;
+}
+.logo {
+  width:72px; height:72px; border-radius:50%;
+  background:rgba(122,27,27,0.2); border:2px solid rgba(122,27,27,0.4);
+  display:flex; align-items:center; justify-content:center;
+  font-size:32px; margin-bottom:4px;
+}
+h1 { font-size:22px; font-weight:700; margin:0; letter-spacing:0.5px; }
+p { color:#94a3b8; font-size:14px; line-height:1.6; max-width:320px; margin:0; }
+.btn-start {
+  display:inline-flex; align-items:center; gap:8px;
+  background:#7A1B1B; color:#fff; border:none; border-radius:10px;
+  padding:14px 32px; font-size:15px; font-weight:600; cursor:pointer;
+  transition:background 0.2s; margin-top:8px;
+  text-decoration:none;
+}
+.btn-start:hover { background:#9B2B2B; }
+.btn-start:active { transform:scale(0.97); }
+.hint { color:#64748b; font-size:11px; max-width:280px; }
 </style>
 </head>
 <body>
-<div id="c">
-<div id="g">MIA</div>
-<div style="position:relative;display:flex;align-items:center;justify-content:center">
-<div id="ring"></div>
-<dotlottie-wc id="l" src="https://lottie.host/8acce412-0d9d-4dd1-9ebf-f3ea131759f3/KGqL1aPxlf.json" style="width:300px;height:300px" autoplay loop></dotlottie-wc>
-</div>
-<div id="t"></div>
-<div id="s">Press mic to speak</div>
-<button id="m" onclick="tm()">
-<svg id="i" viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v7a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-1 17.93V23h2v-2.07A8.001 8.001 0 0 0 20 13h-2a6 6 0 0 1-12 0H4a8.001 8.001 0 0 0 7 7.93z"/></svg>
-</button>
+<div id="container">
+  <div class="logo">🎙️</div>
+  <h1>Talk to MIA</h1>
+  <p>Your AI wealth advisor. Ask about your finances, goals, and investments.</p>
+  <a class="btn-start" href="https://tavus.daily.co/cea5dac98a73f4d5" target="_blank" onclick="startConversation()">
+    Start conversation →
+  </a>
+  <div class="hint">Opens in a new tab. Return here to see MIA's reasoning live.</div>
 </div>
 <script>
-const s=document.getElementById('s'),r=document.getElementById('ring'),t=document.getElementById('t'),m=document.getElementById('m'),l=document.getElementById('l');
-let rec=null,v=null,li=false,sp=false;
-function st(x){s.textContent=x}
-function stt(x){t.textContent=x;t.style.display=x?'block':'none'}
-function mo(x){r.className=x;m.className=x=='listening'?'l':x=='thinking'?'t':''}
-function sr(){
-const S=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(!S){st('Need Chrome/Edge');return}
-rec=new S();rec.lang='en-IN';rec.interimResults=true;rec.continuous=false;
-rec.onresult=e=>{let i='',f='';for(let k=e.resultIndex;k<e.results.length;k++){const u=e.results[k][0].transcript;e.results[k].isFinal?f+=u:i+=u}if(i){stt(i);st(i)}if(f){stt(f);sl();if(f.trim())at(f.trim())}};
-rec.onerror=e=>{st('Mic: '+e.error);sl()};rec.onend=()=>{if(li)sl()}}
-function sl(){if(!li||!rec)return;li=false;mo('');st('Press mic to speak');rec.stop()}
-function ls(){if(li||!rec)return;if(sp)speechSynthesis.cancel();li=true;mo('listening');st('Listening...');rec.start()}
-window.tm=()=>li?sl():ls()
-function pv(){const vv=speechSynthesis.getVoices();if(!vv||!vv.length)return null;const r=x=>{let s=0;if(/en-IN/i.test(x.lang))s+=5;else if(/en-GB/i.test(x.lang))s+=4;else if(/en-US/i.test(x.lang))s+=3;else if(/^en/i.test(x.lang))s+=2;if(/female|zira|samantha|karen|neerja|heera|aria|jenny|microsoft/i.test(x.name))s+=4;if(/google|natural|neural|online|premium/i.test(x.name))s+=2;return s};return[...vv].sort((a,b)=>r(b)-r(a))[0]}
-function spk(t){if(!t)return Promise.resolve();return new Promise(r=>{const u=new SpeechSynthesisUtterance(t);u.rate=1.02;u.pitch=1.05;u.volume=1;if(!v)v=pv();if(v)u.voice=v;u.onstart=()=>{sp=true;mo('speaking');st('Speaking...')};const d=()=>{sp=false;mo('');st('Press mic to speak');r()};u.onend=d;u.onerror=d;speechSynthesis.speak(u)})}
-async function at(t){mo('thinking');st('Thinking...');try{const r=await fetch('/advisor-turn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:t})});const d=await r.json();window.parent?.postMessage({type:'mia-advisor-turn',payload:d},'*');mo('');await spk(d.reply||'Sorry')}catch(e){mo('');await spk('Sorry, something went wrong.')}}
-if(speechSynthesis){speechSynthesis.onvoiceschanged=()=>{v=pv()};v=pv()}
-sr();st('Press mic to speak');
+function startConversation() {
+  try {
+    window.parent.postMessage({ type: 'mia-conversation-started', url: 'https://tavus.daily.co/cea5dac98a73f4d5' }, '*');
+  } catch (_) {}
+}
 </script>
 </body>
 </html>

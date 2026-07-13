@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mia-wealth-backend
+    env: python
+    buildCommand: pip install -r requirements-prod.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: MOCK_MODE
+        value: "1"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: TAVUS_API_KEY
+        sync: false
+      - key: TAVUS_REPLICA_ID
+        value: r9fa0878977a
+      - key: TAVUS_WEBHOOK_BASE_URL
+        sync: false

@@ -8,7 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-import azure.cognitiveservices.speech as speechsdk
+# Lazy import: azure.cognitiveservices.speech has native binaries that may not
+# be available on all platforms (Render, etc.). Only import when SPEECH_KEY is set.
+import config as _cfg
+speechsdk = None
+if _cfg.SPEECH_KEY:
+    try:
+        import azure.cognitiveservices.speech as speechsdk
+    except ImportError:
+        speechsdk = None
 
 from aa_mock.aa_service import create_consent, fetch_fi_data
 from audit import recent_audit_logs
@@ -59,6 +67,11 @@ async def root_legacy():
 
 @app.get("/ice-token")
 async def ice_token():
+    if not SPEECH_KEY:
+        return JSONResponse(
+            {"error": "Azure SPEECH_KEY not configured", "detail": "Set SPEECH_KEY in the backend .env file to enable avatar voice features."},
+            status_code=503,
+        )
     url = f"https://{SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/avatar/relay/token/v1"
     async with httpx.AsyncClient(timeout=10) as hc:
         resp = await hc.get(url, headers={"Ocp-Apim-Subscription-Key": SPEECH_KEY})
@@ -73,6 +86,10 @@ async def ice_token():
 @app.websocket("/stt-ws")
 async def stt_ws(websocket: WebSocket):
     await websocket.accept()
+    if not SPEECH_KEY:
+        await websocket.send_json({"type": "error", "text": "Azure SPEECH_KEY not configured. Set SPEECH_KEY in the backend .env to enable voice features."})
+        await websocket.close()
+        return
     loop = asyncio.get_running_loop()
     msg_queue: asyncio.Queue = asyncio.Queue()
 
@@ -251,6 +268,9 @@ async def tavus_webhook(payload: TavusWebhookPayload):
     if not conv_id or not user_message:
         return {"response": "I didn't catch that - could you say it again?"}
     customer_id = turn_store.get_customer_id(conv_id) or default_customer_id()
+    # Auto-register conversation if it came from an unknown source (e.g., Tavus embed)
+    if not turn_store.conversation_exists(conv_id):
+        turn_store.register_conversation(conv_id, customer_id)
     try:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, run_advisor_turn, customer_id, user_message)
@@ -283,3 +303,13 @@ async def tavus_get_conversation(conversation_id: str):
     if status is None:
         return JSONResponse({"error": "Conversation not found"}, status_code=404)
     return status
+
+
+@app.get("/tavus/latest-turn")
+async def tavus_latest_turn():
+    """Return the most recent turn across all conversations — used by the avatar iframe
+    to poll for new turn data without needing a conversation_id."""
+    turn = turn_store.get_latest_turn() if turn_store else None
+    if turn is None:
+        return {"turn": None}
+    return {"turn": turn}

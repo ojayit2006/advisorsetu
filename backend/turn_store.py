@@ -21,6 +21,7 @@ class TurnStore:
         self._max_age = max_age  # seconds before a conversation is considered stale
         self._convos: dict[str, dict] = {}
         self._turns: dict[str, list[dict]] = defaultdict(list)
+        self._latest_turn: dict | None = None
 
     def register_conversation(self, conversation_id: str, customer_id: str) -> None:
         with self._lock:
@@ -58,6 +59,7 @@ class TurnStore:
             self._turns[conversation_id].append(entry)
             if conversation_id in self._convos:
                 self._convos[conversation_id]["created_at"] = time.time()
+            self._latest_turn = entry
         return turn_id
 
     def get_turns(self, conversation_id: str, since_turn_id: str | None = None) -> list[dict]:
@@ -81,6 +83,10 @@ class TurnStore:
                 "created_at": meta["created_at"],
                 "turn_count": len(self._turns.get(conversation_id, [])),
             }
+
+    def get_latest_turn(self) -> dict | None:
+        with self._lock:
+            return self._latest_turn
 
     def cleanup_stale(self) -> int:
         now = time.time()

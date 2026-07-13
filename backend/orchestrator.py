@@ -8,7 +8,7 @@ import json, os
 from typing import Any
 import httpx
 import google.generativeai as genai
-from config import GEMINI_API_KEY, GEMINI_MODEL, GROQ_API_KEY, GROQ_MODEL
+from config import GEMINI_API_KEY, GEMINI_MODEL, GROQ_API_KEY, GROQ_MODEL, NVIDIA_API_KEY, NVIDIA_MODEL
 from engines import behaviour, explain, life_event, scenario, suitability, surplus, unification
 from rag.retrieval import search_products, search_reg_rules
 from recommendations_store import persist_recommendations
@@ -41,7 +41,7 @@ EMPTY_TURN = {"reply": None, "cards": [], "rationale": None, "suitability_tag": 
 def _exec(name, inp, cid, cache):
     if name == "unification": r = unification.run(cid)
     elif name == "surplus": r = surplus.run(cid)
-    elif name == "scenario": r = scenario.run(cid, inp.get("goal_name"), inp.get("extra_monthly_contribution",0), inp.get("one_time_delta",0))
+    elif name == "scenario": r = scenario.run(cid, inp.get("goal_name"), float(inp.get("extra_monthly_contribution",0) or 0), float(inp.get("one_time_delta",0) or 0))
     elif name == "behaviour": r = behaviour.run(cid)
     elif name == "life_event": r = life_event.run(cid)
     elif name == "suitability": r = suitability.run(cid); persist_recommendations(cid, r["value"]["recommendations"])
@@ -114,6 +114,39 @@ def _run_groq(customer_id, message):
     return {"reply": "Still thinking - ask again?", "cards": cards, **state}
 
 
+def _run_nvidia(customer_id, message):
+    """OpenAI-compatible call via NVIDIA AI API."""
+    if not NVIDIA_API_KEY:
+        raise RuntimeError("NVIDIA_API_KEY not configured")
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": message}]
+    cache, cards, state = {}, [], {"rationale": None, "suitability_tag": None, "audit_id": None}
+    headers = {"Authorization": f"Bearer {NVIDIA_API_KEY}", "Content-Type": "application/json"}
+    for _ in range(MAX_ITER):
+        resp = httpx.post(
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            headers=headers,
+            json={"model": NVIDIA_MODEL, "messages": messages, "tools": OPENAI_TOOLS, "tool_choice": "auto"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        choice = resp.json()["choices"][0]["message"]
+        tool_calls = choice.get("tool_calls")
+        if not tool_calls:
+            return {"reply": choice.get("content") or "Not sure.", "cards": cards, **state}
+        messages.append(choice)
+        for tc in tool_calls:
+            fn_name = tc["function"]["name"]
+            fn_args = json.loads(tc["function"].get("arguments") or "{}")
+            result = _exec(fn_name, fn_args, customer_id, cache)
+            _collect(fn_name, result, cache, cards, state)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc["id"],
+                "content": json.dumps({"result": json.loads(json.dumps(result, default=str))}),
+            })
+    return {"reply": "Still thinking - ask again?", "cards": cards, **state}
+
+
 def run_advisor_turn(customer_id, message):
     errors = []
     if GEMINI_API_KEY:
@@ -126,6 +159,11 @@ def run_advisor_turn(customer_id, message):
             return _run_groq(customer_id, message)
         except Exception as e:
             errors.append(f"Groq: {str(e)[:150]}")
+    if NVIDIA_API_KEY:
+        try:
+            return _run_nvidia(customer_id, message)
+        except Exception as e:
+            errors.append(f"NVIDIA: {str(e)[:150]}")
     if not errors:
         errors.append("No orchestrator LLM configured (set GEMINI_API_KEY or GROQ_API_KEY).")
     return {**EMPTY_TURN, "reply": f"Error: {' | '.join(errors)}"}
