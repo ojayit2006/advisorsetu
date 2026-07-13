@@ -111,4 +111,3 @@ Every recommendation carries:
 - **Backend:** Deploy `backend/` on Render (Python, `uvicorn main:app`)
 - **Avatar:** Tavus PAL deployment configured via Tavus dashboard
 
-Detailed API contract in [`CONTRACT.md`](CONTRACT.md). Architecture plan in [`PLAN.md`](PLAN.md).
