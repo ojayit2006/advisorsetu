@@ -1,0 +1,23 @@
+# Environment variables
+.env
+backend/.env
+
+# VS Code
+.vscode/
+
+# Backup files
+*.bak
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Build
+dist/
+.next/
+
+# Local dev logs
+*.log
