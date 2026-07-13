@@ -109,5 +109,9 @@ Every recommendation carries:
 
 - **Frontend:** Deploy `web/` on Vercel (`NEXT_PUBLIC_BACKEND_URL` → backend URL)
 - **Backend:** Deploy `backend/` on Render (Python, `uvicorn main:app`)
+
+## Live Demo
+
+- **Web App:** https://advisorsetu.vercel.app
 - **Avatar:** Tavus PAL deployment configured via Tavus dashboard
 
