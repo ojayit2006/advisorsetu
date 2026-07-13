@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/customer", label: "Customer 360" },
+  { href: "/simulate", label: "Simulate" },
   { href: "/recommendations", label: "Recommendations" },
   { href: "/audit", label: "Audit & Compliance" },
   { href: "/copilot", label: "RM Co-pilot" },
@@ -14,8 +15,8 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 shrink-0 bg-ink text-cream border-r-4 border-ink flex flex-col">
-      <Link href="/" className="block px-5 py-6 border-b-4 border-cream/10">
+    <aside className="w-60 shrink-0 bg-ink text-cream flex flex-col">
+      <Link href="/" className="block px-5 py-6 border-b border-cream/10">
         <div className="font-display font-bold text-xl leading-none">MIA</div>
         <div className="text-[10px] uppercase tracking-[0.2em] text-gold mt-1">Wealth Console</div>
       </Link>
@@ -35,7 +36,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="px-5 py-4 border-t-4 border-cream/10 text-[10px] text-cream/50">
+      <div className="px-5 py-4 border-t border-cream/10 text-[10px] text-cream/50">
         Demo customer: Rahul Verma
       </div>
     </aside>

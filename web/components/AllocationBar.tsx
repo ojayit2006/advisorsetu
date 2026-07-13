@@ -2,13 +2,13 @@ import type { Holding } from "@/lib/types";
 import { formatINR } from "@/lib/format";
 
 const COLORS: Record<string, string> = {
-  equity: "#7a1b1b",
-  debt: "#d6a13c",
-  hybrid: "#b3822a",
-  gold: "#e4b84a",
-  real_estate: "#4a3320",
-  cash: "#1e7a45",
-  insurance: "#3a3a3a",
+  equity: "#7a1b26",
+  debt: "#9c7a3d",
+  hybrid: "#b3934f",
+  gold: "#c9a862",
+  real_estate: "#5c4a2e",
+  cash: "#2e6e48",
+  insurance: "#4a4a48",
 };
 
 export default function AllocationBar({ holdings }: { holdings: Holding[] }) {
@@ -25,7 +25,10 @@ export default function AllocationBar({ holdings }: { holdings: Holding[] }) {
 
   return (
     <div>
-      <div className="flex w-full h-6" style={{ border: "3px solid var(--color-ink)", overflow: "hidden" }}>
+      <div
+        className="flex w-full h-2.5 rounded-full"
+        style={{ border: "1px solid var(--color-line)", overflow: "hidden" }}
+      >
         {entries.map(([cls, val]) => (
           <div
             key={cls}
@@ -34,15 +37,12 @@ export default function AllocationBar({ holdings }: { holdings: Holding[] }) {
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs">
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-xs">
         {entries.map(([cls, val]) => (
           <div key={cls} className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-3 h-3"
-              style={{ background: COLORS[cls] ?? "#999", border: "1px solid var(--color-ink)" }}
-            />
-            <span className="font-bold capitalize">{cls.replace("_", " ")}</span>
-            <span className="text-ink/50">{formatINR(val, { compact: true })}</span>
+            <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: COLORS[cls] ?? "#999" }} />
+            <span className="font-semibold capitalize">{cls.replace("_", " ")}</span>
+            <span className="font-mono text-ink/50">{formatINR(val, { compact: true })}</span>
           </div>
         ))}
       </div>

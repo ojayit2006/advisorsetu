@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-maroon: #7a1b1b;
-  --color-maroon-dark: #551212;
-  --color-maroon-light: #9c2b2b;
-  --color-cream: #f4ecd8;
-  --color-cream-dark: #e6d8b8;
-  --color-gold: #d6a13c;
-  --color-gold-dark: #b3822a;
-  --color-ink: #171210;
-  --color-ok: #1e7a45;
-  --color-warn: #b3822a;
-  --color-danger: #a3241f;
+  --color-maroon: #7a1b26;
+  --color-maroon-dark: #4e0f1a;
+  --color-maroon-light: #9c3040;
+  --color-cream: #f4f5f5;
+  --color-cream-dark: #e7e8e7;
+  --color-gold: #9c7a3d;
+  --color-gold-dark: #7c5f2c;
+  --color-ink: #15171b;
+  --color-line: #dfe0df;
+  --color-ok: #2e6e48;
+  --color-warn: #8f6a28;
+  --color-danger: #8c2f27;
 
-  --font-display: var(--font-display-family), "Space Grotesk", system-ui, sans-serif;
-  --font-body: var(--font-body-family), "Inter", system-ui, sans-serif;
+  --font-display: var(--font-display-family), "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-body-family), "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: var(--font-mono-family), "IBM Plex Mono", ui-monospace, monospace;
 }
 
 :root {
@@ -39,139 +41,180 @@ h4,
   font-family: var(--font-display);
 }
 
-/* ───────────────────────── Neo-brutalist primitives ───────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-maroon);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
+
+/* ───────────────────────── Console primitives ─────────────────────────
+   Wrapped in @layer components so Tailwind utilities (e.g. bg-ink,
+   text-cream applied inline) always win over these base styles —
+   unlayered CSS otherwise beats @layer utilities regardless of source order. */
+
+@layer components {
 
 .neo-card {
   background: #fff;
-  border: 3px solid var(--color-ink);
-  box-shadow: 6px 6px 0 0 var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(21, 17, 10, 0.04), 0 10px 24px -18px rgba(21, 17, 10, 0.25);
 }
 
 .neo-card-cream {
-  background: var(--color-cream);
-  border: 3px solid var(--color-ink);
-  box-shadow: 6px 6px 0 0 var(--color-ink);
+  background: var(--color-cream-dark);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
 }
 
 .neo-btn {
-  border: 3px solid var(--color-ink);
-  box-shadow: 4px 4px 0 0 var(--color-ink);
-  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.neo-btn:hover {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 0 var(--color-ink);
-}
 .neo-btn:active {
-  transform: translate(4px, 4px);
-  box-shadow: none;
+  transform: scale(0.99);
 }
 .neo-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 .neo-btn-primary {
   background: var(--color-maroon);
-  color: var(--color-cream);
+  color: #fff;
 }
+.neo-btn-primary:hover:not(:disabled) {
+  background: var(--color-maroon-dark);
+}
+
 .neo-btn-accent {
-  background: var(--color-gold);
+  background: transparent;
+  border-color: var(--color-ink);
   color: var(--color-ink);
 }
-.neo-btn-ink {
+.neo-btn-accent:hover:not(:disabled) {
   background: var(--color-ink);
   color: var(--color-cream);
 }
 
+.neo-btn-ink {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+.neo-btn-ink:hover:not(:disabled) {
+  background: #000;
+}
+
 .neo-input {
-  border: 3px solid var(--color-ink);
+  border: 1px solid var(--color-line);
   background: #fff;
+  border-radius: 4px;
   padding: 10px 14px;
   font-weight: 500;
   outline: none;
   width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .neo-input:focus {
-  box-shadow: 4px 4px 0 0 var(--color-gold);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px rgba(21, 23, 27, 0.07);
 }
 
 /* ───────────────────────────────── Sidebar ─────────────────────────────────── */
 
 .sidebar-link {
   display: block;
-  padding: 10px 14px;
-  font-weight: 700;
+  padding: 9px 14px;
+  font-weight: 600;
   font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 2px solid transparent;
-  color: var(--color-cream);
-  transition: all 0.1s;
+  letter-spacing: 0.06em;
+  border-left: 2px solid transparent;
+  color: rgba(246, 246, 243, 0.68);
+  transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
 }
 .sidebar-link:hover {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
+  color: var(--color-cream);
+  border-left-color: rgba(246, 246, 243, 0.28);
 }
 .sidebar-link-active {
-  background: var(--color-gold);
-  color: var(--color-ink);
-  border-color: var(--color-ink);
-  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-left-color: var(--color-gold);
 }
 
-/* ─────────────────── Suitability pills — never subtle, ever ────────────────── */
+/* ─────────────────── Suitability pills — quiet, precise ────────────────── */
 
 .suitability-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 2.5px solid var(--color-ink);
-  padding: 4px 12px;
-  font-weight: 800;
-  font-size: 0.72rem;
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-weight: 700;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  box-shadow: 3px 3px 0 0 var(--color-ink);
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
+.suitability-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
 .pill-suitable {
-  background: #b6e3b6;
-  color: #0d3d1c;
+  background: rgba(46, 110, 72, 0.1);
+  color: var(--color-ok);
 }
 .pill-needs-review {
-  background: #f4cf7a;
-  color: #4a3300;
+  background: rgba(143, 106, 40, 0.12);
+  color: var(--color-warn);
 }
 .pill-not-suitable {
-  background: #f2a8a3;
-  color: #4a0e0a;
+  background: rgba(140, 47, 39, 0.1);
+  color: var(--color-danger);
 }
 .pill-unknown {
-  background: #ddd;
-  color: #333;
+  background: rgba(21, 23, 27, 0.06);
+  color: rgba(21, 23, 27, 0.55);
 }
 
 /* ────────────────────────────── "Why?" panel ───────────────────────────────── */
 
 .why-toggle {
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-maroon);
-  border-bottom: 2px solid var(--color-maroon);
+  border-bottom: 1px solid transparent;
   cursor: pointer;
+}
+.why-toggle:hover {
+  border-bottom-color: var(--color-maroon);
 }
 .why-panel {
   margin-top: 10px;
-  border: 2.5px solid var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
   background: var(--color-cream);
   padding: 14px;
   display: flex;
@@ -179,8 +222,8 @@ h4,
   gap: 10px;
 }
 .why-block .why-label {
-  font-weight: 800;
-  font-size: 0.68rem;
+  font-weight: 700;
+  font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-maroon);
@@ -195,12 +238,13 @@ h4,
   font-size: 0.85rem;
 }
 .why-risk {
-  border-top: 2px dashed var(--color-ink);
+  border-top: 1px dashed var(--color-line);
   padding-top: 10px;
 }
 .why-confidence {
+  font-family: var(--font-mono);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 600;
   opacity: 0.6;
 }
 
@@ -209,23 +253,28 @@ h4,
 .badge {
   display: inline-flex;
   align-items: center;
-  border: 2px solid var(--color-ink);
-  padding: 2px 9px;
-  font-weight: 700;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-cream-dark);
+  padding: 2px 10px;
+  font-weight: 600;
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .progress-track {
-  border: 2.5px solid var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
   background: #fff;
-  height: 18px;
+  height: 8px;
   width: 100%;
   overflow: hidden;
 }
 .progress-fill {
   height: 100%;
-  background: var(--color-gold);
-  border-right: 2.5px solid var(--color-ink);
+  background: var(--color-maroon);
+  border-radius: 999px;
+}
+
 }

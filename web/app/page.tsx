@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b-4 border-ink px-6 md:px-10 py-5 flex items-center justify-between">
+      <header className="border-b border-line px-6 md:px-10 py-5 flex items-center justify-between">
         <div className="font-display font-bold text-xl tracking-tight">
           MIA <span className="text-maroon">Wealth</span>
         </div>
@@ -13,8 +13,10 @@ export default function LandingPage() {
       </header>
 
       <section className="px-6 md:px-10 py-16 md:py-24 max-w-5xl">
-        <div className="badge bg-gold mb-6">IDBI Bank Hackathon · Live demo</div>
-        <h1 className="font-display font-bold text-5xl md:text-7xl leading-[0.95] max-w-3xl">
+        <div className="text-xs font-semibold uppercase tracking-widest text-ink/40 mb-6">
+          MIA Wealth · Built for IDBI Bank
+        </div>
+        <h1 className="font-display font-black text-5xl md:text-7xl leading-[0.95] tracking-tight max-w-3xl">
           An AI advisor that shows its work.
         </h1>
         <p className="mt-6 text-lg md:text-xl text-ink/70 max-w-2xl">
@@ -44,10 +46,7 @@ export default function LandingPage() {
             (customer app, this console, the avatar).
           </p>
         </div>
-        <div
-          className="neo-card p-6"
-          style={{ borderColor: "var(--color-maroon)", boxShadow: "6px 6px 0 0 var(--color-maroon)" }}
-        >
+        <div className="neo-card p-6" style={{ borderTop: "3px solid var(--color-maroon)" }}>
           <div className="text-xs font-bold uppercase tracking-widest text-maroon mb-2">The moat</div>
           <h2 className="font-display font-bold text-2xl mb-3">Explainability &amp; compliance, by default</h2>
           <p className="text-sm text-ink/70">
@@ -96,7 +95,7 @@ BANK CONSOLE (Next.js) ──┼──HTTPS/Realtime──▶ SUPABASE (Postgres
         </div>
       </section>
 
-      <footer className="px-6 md:px-10 py-6 border-t-4 border-ink text-xs text-ink/50 mt-auto">
+      <footer className="px-6 md:px-10 py-6 border-t border-line text-xs text-ink/50 mt-auto">
         MIA Wealth — built for the IDBI Bank hackathon. Distributor + educational framing; not investment
         advice.
       </footer>

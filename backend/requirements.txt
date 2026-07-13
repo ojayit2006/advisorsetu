@@ -5,5 +5,5 @@ requests
 python-dotenv
 pydantic
 azure-cognitiveservices-speech
-anthropic
+google-generativeai
 numpy

@@ -14,6 +14,8 @@ export default function AuditPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(false);
+  const [query, setQuery] = useState("");
+  const [piiOnly, setPiiOnly] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,10 +65,20 @@ export default function AuditPage() {
   if (error) return <PageState text={error} isError />;
 
   const piiCount = logs.filter((l) => l.pii_accessed).length;
+  const q = query.trim().toLowerCase();
+  const filteredLogs = logs.filter((l) => {
+    if (piiOnly && !l.pii_accessed) return false;
+    if (!q) return true;
+    return (
+      l.action.toLowerCase().includes(q) ||
+      l.entity_type.toLowerCase().includes(q) ||
+      (l.actor ?? "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="neo-card-cream p-5" style={{ borderLeft: "8px solid var(--color-maroon)" }}>
+      <div className="neo-card-cream p-5" style={{ borderLeft: "3px solid var(--color-maroon)" }}>
         <div className="text-xs font-bold uppercase tracking-widest text-maroon">The moat</div>
         <h1 className="font-display font-bold text-2xl mt-1">Audit &amp; Compliance trail</h1>
         <p className="text-sm text-ink/70 mt-2 max-w-2xl">
@@ -81,12 +93,27 @@ export default function AuditPage() {
           {live ? "● Realtime" : `Polling every ${POLL_MS / 1000}s`}
         </span>
         <span className="badge">{logs.length} entries</span>
-        <span className="badge bg-danger text-cream">{piiCount} PII accesses</span>
+        <button
+          type="button"
+          onClick={() => setPiiOnly((v) => !v)}
+          className={`badge cursor-pointer ${piiOnly ? "bg-danger text-cream" : ""}`}
+        >
+          {piiCount} PII accesses{piiOnly ? " · showing only" : " · click to filter"}
+        </button>
       </div>
 
+      <input
+        className="neo-input max-w-sm"
+        placeholder="Search by action, entity, or actor…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
       <div className="flex flex-col gap-3">
-        {logs.length ? (
-          logs.map((l) => <AuditLogRow key={l.id} log={l} />)
+        {filteredLogs.length ? (
+          filteredLogs.map((l) => <AuditLogRow key={l.id} log={l} />)
+        ) : logs.length ? (
+          <p className="text-sm text-ink/50">No entries match this filter.</p>
         ) : (
           <p className="text-sm text-ink/50">No audit entries yet.</p>
         )}

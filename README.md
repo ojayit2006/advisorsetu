@@ -24,7 +24,7 @@ cd backend
 python -m venv .venv && .venv/Scripts/activate   # or source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
 cp .env.example .env
-# fill in at minimum: ANTHROPIC_API_KEY (for the orchestrator LLM)
+# fill in at minimum: GEMINI_API_KEY (for the orchestrator LLM; GROQ_API_KEY as an optional fallback)
 #                      SPEECH_KEY + SPEECH_REGION (for the MIA avatar; leave blank to skip voice)
 uvicorn main:app --reload --port 8000
 ```

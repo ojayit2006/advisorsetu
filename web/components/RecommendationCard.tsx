@@ -27,9 +27,13 @@ export default function RecommendationCard({
       <div className="flex flex-wrap gap-2 text-xs">
         <span className="badge capitalize">Risk: {rec.risk_level}</span>
         {rec.cadence && <span className="badge capitalize">{rec.cadence}</span>}
-        <span className="badge">Amount: {formatINR(rec.amount)}</span>
+        <span className="badge">
+          Amount: <span className="font-mono">{formatINR(rec.amount)}</span>
+        </span>
         {typeof rec.expected_return === "number" && (
-          <span className="badge">Exp. return: {rec.expected_return}% p.a.</span>
+          <span className="badge">
+            Exp. return: <span className="font-mono">{rec.expected_return}% p.a.</span>
+          </span>
         )}
       </div>
 

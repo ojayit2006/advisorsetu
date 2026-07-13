@@ -79,15 +79,15 @@ export default function CustomerPage() {
               twin.accounts.map((a) => (
                 <div
                   key={a.id}
-                  className="flex items-center justify-between border-b-2 border-ink/10 pb-2 last:border-0 last:pb-0"
+                  className="flex items-center justify-between border-b border-ink/10 pb-2 last:border-0 last:pb-0"
                 >
                   <div>
-                    <div className="font-bold text-sm">{a.institution}</div>
+                    <div className="font-semibold text-sm">{a.institution}</div>
                     <div className="text-xs text-ink/50 capitalize">
                       {a.type.replace("_", " ")} · {a.source.toUpperCase()}
                     </div>
                   </div>
-                  <div className="font-mono font-bold text-sm">{formatINR(a.balance)}</div>
+                  <div className="font-mono font-semibold text-sm tabular-nums">{formatINR(a.balance)}</div>
                 </div>
               ))
             ) : (

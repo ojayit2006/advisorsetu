@@ -14,8 +14,8 @@ export default function StatCard({
 
   return (
     <div className="neo-card p-5">
-      <div className="text-xs font-bold uppercase tracking-widest text-ink/50">{label}</div>
-      <div className={`font-display font-bold text-3xl mt-2 ${accentClass}`}>{value}</div>
+      <div className="text-xs font-semibold uppercase tracking-widest text-ink/50">{label}</div>
+      <div className={`font-mono font-semibold text-3xl tabular-nums mt-2 ${accentClass}`}>{value}</div>
       {sublabel && <div className="text-xs text-ink/60 mt-1">{sublabel}</div>}
     </div>
   );

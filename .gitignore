@@ -18,3 +18,6 @@ node_modules/
 # Build
 dist/
 .next/
+
+# Local dev logs
+*.log

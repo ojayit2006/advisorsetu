@@ -8,7 +8,11 @@ SPEECH_KEY = os.getenv("SPEECH_KEY", "")
 SPEECH_REGION = os.getenv("SPEECH_REGION", "eastus2")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+# Fallback orchestrator LLM if Gemini errors (quota, outage, etc.) — OpenAI-compatible, no extra SDK needed.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")

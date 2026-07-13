@@ -121,7 +121,7 @@ export default function CopilotPage() {
                 {t.cards?.length > 0 && (
                   <div className="flex flex-col gap-2 mt-3">
                     {t.cards.map((c, ci) => (
-                      <div key={ci} className="border-2 border-ink/20 p-2 text-xs font-mono bg-cream-dark/40">
+                      <div key={ci} className="border border-ink/15 rounded p-2 text-xs font-mono bg-cream-dark/40">
                         <div className="font-bold uppercase tracking-wide mb-1">{c.type}</div>
                         <pre className="whitespace-pre-wrap break-words">{JSON.stringify(c.data, null, 2)}</pre>
                       </div>

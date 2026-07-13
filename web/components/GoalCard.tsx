@@ -17,13 +17,14 @@ export default function GoalCard({ goal }: { goal: Goal }) {
         <span className={`badge ${priorityClass}`}>{goal.priority}</span>
       </div>
       <div className="text-sm text-ink/70">
-        Target <strong>{formatINR(goal.target_amount)}</strong> by {formatDate(goal.target_date)}
+        Target <strong className="font-mono font-semibold text-ink">{formatINR(goal.target_amount)}</strong> by{" "}
+        {formatDate(goal.target_date)}
       </div>
       <div>
         <div className="progress-track">
           <div className="progress-fill" style={{ width: `${pct}%` }} />
         </div>
-        <div className="flex justify-between text-xs font-bold mt-1">
+        <div className="flex justify-between text-xs font-mono font-semibold mt-1.5">
           <span>{formatINR(goal.funded_amount)} funded</span>
           <span>{pct}%</span>
         </div>
