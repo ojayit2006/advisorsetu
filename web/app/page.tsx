@@ -14,7 +14,7 @@ export default function LandingPage() {
 
       <section className="px-6 md:px-10 py-16 md:py-24 max-w-5xl">
         <div className="text-xs font-semibold uppercase tracking-widest text-ink/40 mb-6">
-          MIA Wealth · Built for IDBI Bank
+          MIA Wealth
         </div>
         <h1 className="font-display font-black text-5xl md:text-7xl leading-[0.95] tracking-tight max-w-3xl">
           An AI advisor that shows its work.
@@ -58,25 +58,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-6 md:px-10 py-12 max-w-5xl">
-        <div className="text-xs font-bold uppercase tracking-widest text-maroon mb-4">
-          Architecture · one brain, reused everywhere
-        </div>
-        <div className="neo-card-cream p-6 font-mono text-[11px] md:text-sm overflow-x-auto">
-          <pre className="whitespace-pre">{`CUSTOMER APP (Expo)   ──┐
-BANK CONSOLE (Next.js) ──┼──HTTPS/Realtime──▶ SUPABASE (Postgres + Realtime)
-        │  embeds         │
-   MIA AVATAR (Azure WebRTC + STT)
-        │  transcript
-        ▼
-   FastAPI  ── /advisor-turn ──▶  ORCHESTRATOR (LLM + tools)
-                                     ├─ Unification / Twin
-                                     ├─ Surplus · Scenario Sim
-                                     ├─ Behaviour · Life-Event
-                                     ├─ Suitability / Recommend
-                                     └─ Explainability / Compliance ──▶ audit_logs`}</pre>
-        </div>
-      </section>
 
       <section className="px-6 md:px-10 py-16 max-w-5xl">
         <div
@@ -96,8 +77,7 @@ BANK CONSOLE (Next.js) ──┼──HTTPS/Realtime──▶ SUPABASE (Postgres
       </section>
 
       <footer className="px-6 md:px-10 py-6 border-t border-line text-xs text-ink/50 mt-auto">
-        MIA Wealth — built for the IDBI Bank hackathon. Distributor + educational framing; not investment
-        advice.
+        MIA Wealth — educational guidance, not investment advice.
       </footer>
     </div>
   );
