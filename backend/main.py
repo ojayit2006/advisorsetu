@@ -193,6 +193,42 @@ async def customers_default():
     return {"customer_id": default_customer_id()}
 
 
+class FinancialTwinRequest(BaseModel):
+    yes: int | None = None  # customer_id (int as sent by Tavus PAL tool)
+    no: int | None = None   # session identifier
+
+
+@app.post("/api/financial-twin")
+async def api_financial_twin(body: FinancialTwinRequest):
+    """Endpoint for Tavus PAL get_financial_twin tool.
+    Accepts yes (customer_id) and no (session) from the PAL tool payload,
+    returns the Financial Twin state for MIA's LLM agent to reason over."""
+    # Map integer customer_id from Tavus PAL tool to UUID used by mock data
+    if body.yes:
+        cid = f"00000000-0000-0000-0000-{body.yes:012d}"
+    else:
+        cid = default_customer_id()
+    twin = build_twin_state(cid)
+    return {
+        "customer_id": cid,
+        "customer_name": (twin["customer"] or {}).get("name", ""),
+        "risk_profile": (twin["customer"] or {}).get("risk_profile", "moderate"),
+        "net_worth": twin["net_worth"],
+        "cash": twin["cash"],
+        "investable_holdings_value": twin["investable_holdings_value"],
+        "protection_cover": twin["protection_cover"],
+        "accounts": [
+            {"institution": a["institution"], "type": a["type"], "balance": a["balance"]}
+            for a in twin["accounts"]
+        ],
+        "goals": [
+            {"name": g["name"], "target": g["target_amount"], "funded": g["funded_amount"],
+             "target_date": g["target_date"], "priority": g["priority"]}
+            for g in twin["goals"]
+        ],
+    }
+
+
 @app.get("/customers/{customer_id}/twin")
 async def customer_twin(customer_id: str):
     twin = build_twin_state(customer_id)

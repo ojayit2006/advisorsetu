@@ -9,7 +9,7 @@ import WhyPanel from "@/components/WhyPanel";
 type Turn = AdvisorTurnResponse & { at: string; source: "avatar" | "chat" };
 
 const POLL_MS = 2000;
-const TAVUS_URL = "https://tavus.daily.co/c7e2084a61a9e489";
+const TAVUS_URL = "https://maker.tavus.io/deployments/4518e0cb-c35c-4129-8fe3-ef32debb40b2";
 
 export default function CopilotPage() {
   const [turns, setTurns] = useState<Turn[]>([]);
