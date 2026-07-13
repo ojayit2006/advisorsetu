@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, BACKEND_URL } from "@/lib/api";
-<<<<<<< HEAD
 import type { AdvisorTurnResponse, MiaAdvisorTurnMessage, Rationale, TavusTurnResult } from "@/lib/types";
-=======
-import type { AdvisorTurnResponse, MiaAdvisorTurnMessage, TavusTurnResult } from "@/lib/types";
->>>>>>> c40e7b4fc19abbbc0f51c850784caac82908bd0f
 import SuitabilityPill from "@/components/SuitabilityPill";
 import WhyPanel from "@/components/WhyPanel";
 
@@ -66,11 +62,7 @@ export default function CopilotPage() {
             {
               reply: turn.reply,
               cards: turn.cards ?? [],
-<<<<<<< HEAD
               rationale: turn.rationale ?? ({} as Rationale),
-=======
-              rationale: turn.rationale ?? null,
->>>>>>> c40e7b4fc19abbbc0f51c850784caac82908bd0f
               suitability_tag: turn.suitability_tag ?? "needs_review",
               audit_id: turn.audit_id ?? "",
               at: new Date().toISOString(),
