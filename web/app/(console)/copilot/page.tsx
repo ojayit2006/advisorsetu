@@ -157,7 +157,7 @@ export default function CopilotPage() {
             </div>
           )}
           <iframe
-            src={BACKEND_URL}
+            src={TAVUS_URL}
             title="MIA Avatar"
             className="w-full h-full border-0"
             allow="camera; microphone; autoplay"
